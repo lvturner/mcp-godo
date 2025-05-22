@@ -21,7 +21,7 @@ func (t *todo_sqlite) AddTodo(title string) (TodoItem, error) {
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
 	}
 	var id string
-	err := t.db.QueryRow("INSERT INTO todos (title) VALUES ($1) RETURNING id", title).Scan(&id)
+	err := t.db.QueryRow("INSERT INTO todos (title, completed) VALUES ($1, false) RETURNING id", title).Scan(&id)
 	if err != nil {
 		return TodoItem{}, err
 	}
