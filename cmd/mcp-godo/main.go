@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"mcp-godo/pkg/todo"
@@ -15,25 +16,61 @@ import (
 )
 
 var todoService todo.TodoService
+var config todo.Config
+
+func loadConfig(){
+	config.StorageType = os.Getenv("STORAGE_TYPE")
+}
 
 func main() {
-	// Create a new MCP server
-	s := server.NewMCPServer(
-		"Todo MCP",
-		"1.0.0",
-		server.WithToolCapabilities(false),
-	)
-	
 	var err error
-	todoService, err = todo.NewTodoServiceFromConfig(todo.Config{
-		StorageType: "inmemory",
-	})	
+	loadConfig()
 	
+	todoService, err = todo.NewTodoServiceFromConfig(config)	
 	if err != nil {
 		fmt.Println("Error creating todo service:", err)
 		return
 	}
 
+	// Create a new MCP server
+	s := server.NewMCPServer(
+		"Todo MCP",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+		server.WithResourceCapabilities(true, true),
+	)
+
+	addTools(s)
+	addResources(s)
+
+	// Start the stdio server
+	if err := server.ServeStdio(s); err != nil {
+		fmt.Printf("Server error: %v\n", err)
+	}
+}
+
+func addResources(s *server.MCPServer) {
+	listTodosTemplate := mcp.NewResource(
+		"todos",
+		"List of todos",
+		mcp.WithResourceDescription("Full list of todos"),
+		mcp.WithMIMEType("application/json"),
+	)
+	
+	s.AddResource(listTodosTemplate, listTodosResourceHandler)
+
+	
+	singleTodoTemplate := mcp.NewResource(
+		"todos://{id}",
+		"Single todo list item",
+		mcp.WithResourceDescription("Single todo list item"),
+		mcp.WithMIMEType("application/json"),
+	)	
+	
+	s.AddResource(singleTodoTemplate, getSingleTodoResourceHandler)
+}
+
+func addTools(s *server.MCPServer) {
 	// Add tool
 	tool := mcp.NewTool("add_todo",
 		mcp.WithDescription("Add a new todo item, always call list_todos before calling this to help avoid adding duplicate items, always remember to actually call this function to add the todo item correctly to the list"),
@@ -45,22 +82,7 @@ func main() {
 
 	// Add tool handler
 	s.AddTool(tool, addTodoHandler)
-
-	// List tool
-	listTool := mcp.NewTool("list_todos",
-		mcp.WithDescription("List all todo items, returns them in a list with the format 'idnubmer - todo title' please note that the idnumber is not human readable and should not be presented to the user"),
-	)
-	s.AddTool(listTool, listTodosHandler)
-
 	
-	singleTodoTemplate := mcp.NewResource(
-		"todos://{id}",
-		"Single todo list item",
-		mcp.WithResourceDescription("Single todo list item"),
-		mcp.WithMIMEType("application/json"),
-	)	
-	
-	s.AddResource(singleTodoTemplate, getSingleTodoHandler)
 
 	completeTodoTool := mcp.NewTool("complete_todo",
 		mcp.WithDescription("Complete a single todo item by ID, remember you can list todos in order to check for an appropriate id"),
@@ -70,15 +92,10 @@ func main() {
 		),
 	)
 	s.AddTool(completeTodoTool, completeTodoHandler)
-
-	// Start the stdio server
-	if err := server.ServeStdio(s); err != nil {
-		fmt.Printf("Server error: %v\n", err)
-	}
 }
 
 func completeTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.Params.Arguments["id"].(string)
+	id, ok := request.GetArguments()["id"].(string)
 	if !ok {
 		return nil, errors.New("id must be a string")
 	}
@@ -91,7 +108,7 @@ func completeTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp
 }
 
 func addTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	title, ok := request.Params.Arguments["title"].(string)
+	title, ok := request.GetArguments()["title"].(string)
 	if !ok {
 		return nil, errors.New("title must be a string")
 	}
@@ -101,22 +118,24 @@ func addTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 	return mcp.NewToolResultText(fmt.Sprintf("%s added to todo list", title)), nil
 }
 
-func listTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func listTodosResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	todos := todoService.GetAllTodos()
 	
-	var sb strings.Builder
-	
-	for _, todo := range todos {
-		sb.WriteString(todo.ID)
-		sb.WriteString(" - ")
-		sb.WriteString(todo.Title)
-		sb.WriteString(", ")
+	jsonData, err := json.Marshal(todos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal todos to JSON: %w", err)
 	}
 	
-	return mcp.NewToolResultText(fmt.Sprintf("The items on your todo list are: %s", sb.String())), nil
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI: request.Params.URI,
+			MIMEType: "application/json",
+			Text: string(jsonData),
+		},
+	}, nil
 }
 
-func getSingleTodoHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func getSingleTodoResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	id := extractIDFromURI(request.Params.URI)
 	todo, err := todoService.GetTodo(id)
 	if err != nil {
