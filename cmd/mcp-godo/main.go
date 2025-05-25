@@ -106,6 +106,64 @@ func addTools(s *server.MCPServer) {
 		),
 	)
 	s.AddTool(getTodoTool, getTodoHandler)
+	
+	deleteTodoTool := mcp.NewTool("delete_todo",
+		mcp.WithDescription("Delete a single todo item by ID"),		
+		mcp.WithString("id",
+			mcp.Required(),			
+			mcp.Description("The ID of the todo item"),
+		),
+	)
+	s.AddTool(deleteTodoTool, deleteTodoHandler)
+	
+	getActiveTodosTool := mcp.NewTool("get_active_todos",
+		mcp.WithDescription("Retrieve all active (not completed) todos"),
+	)
+	s.AddTool(getActiveTodosTool, getActiveTodosHandler)
+	
+	getCompletedTodosTool := mcp.NewTool("get_completed_todos",
+		mcp.WithDescription("Retrieve all completed todos"),
+	)
+	s.AddTool(getCompletedTodosTool, getCompletedTodosHandler)
+}
+
+func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	todos := todoService.GetCompletedTodos()
+	if len(todos) == 0 {
+		return mcp.NewToolResultText("No completed todos found"), nil
+	}
+	var resultText string
+	for _, todo := range todos {
+		status := "Completed"
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
+	}
+	return mcp.NewToolResultText(resultText), nil
+}
+
+func getActiveTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	todos := todoService.GetActiveTodos()
+	if len(todos) == 0 {
+		return mcp.NewToolResultText("No active todos found"), nil
+	}
+	var resultText string
+	for _, todo := range todos {
+		status := "Incomplete"
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
+	}
+	return mcp.NewToolResultText(resultText), nil
+}
+
+func deleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	id, ok := request.GetArguments()["id"].(string)
+	if !ok {
+		return nil, errors.New("id must be a string")
+	}
+	todo, err := todoService.DeleteTodo(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete todo: %w", err)	
+	}
+	resultText := fmt.Sprintf("Deleted Todo: ID=%s, Title=%s", todo.ID, todo.Title)
+	return mcp.NewToolResultText(resultText), nil
 }
 
 func getTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

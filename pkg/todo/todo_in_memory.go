@@ -52,3 +52,32 @@ func (t *todo_in_memory) GetTodo(id string) (TodoItem, error) {
 	}
 	return TodoItem{}, fmt.Errorf("todo not found")
 }
+
+func (t *todo_in_memory) GetActiveTodos() []TodoItem {
+	items := make([]TodoItem, 0)
+	for _, item := range t.todos {
+		if !item.Completed {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func (t *todo_in_memory) GetCompletedTodos() []TodoItem {
+	items := make([]TodoItem, 0)
+	for _, item := range t.todos {
+		if item.Completed {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func (t *todo_in_memory) DeleteTodo(id string) (TodoItem, error) {
+	if todo, exists := t.todos[id]; exists {
+		delete(t.todos, id)
+		return todo, nil
+	}
+	return TodoItem{}, fmt.Errorf("todo not found")
+}
+

@@ -70,6 +70,56 @@ func (t *todo_sqlite) GetTodo(id string) (TodoItem, error) {
 	return item, nil
 }
 
+func (t *todo_sqlite) GetActiveTodos() []TodoItem {
+	rows, err := t.db.Query("SELECT id, title, completed FROM todos WHERE completed = false")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var items []TodoItem
+	for rows.Next() {
+		var item TodoItem
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed)
+		if err != nil {
+			log.Fatal(err)
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+func (t *todo_sqlite) GetCompletedTodos() []TodoItem {
+	rows, err := t.db.Query("SELECT id, title, completed FROM todos WHERE completed = true")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var items []TodoItem
+	for rows.Next() {
+		var item TodoItem
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed)
+		if err != nil {
+			log.Fatal(err)
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
+func (t *todo_sqlite) DeleteTodo(id string) (TodoItem, error) {
+	var item TodoItem
+	row := t.db.QueryRow("SELECT id, title, completed FROM todos WHERE id = ?", id)
+	err := row.Scan(&item.ID, &item.Title, &item.Completed)
+	if err != nil {
+		return item, err
+	}
+	_, err = t.db.Exec("DELETE FROM todos WHERE id = ?", id)
+	if err != nil {
+		return item, err
+	}
+	return item, nil
+}
+
 func (t *todo_sqlite) Close() error {
 	return t.db.Close()
 }
