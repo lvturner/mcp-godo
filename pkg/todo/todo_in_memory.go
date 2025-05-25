@@ -38,6 +38,16 @@ func (t *todo_in_memory) CompleteTodo(id string) (TodoItem, error) {
 	return t.todos[id], nil
 }
 
+func (t *todo_in_memory) UnCompleteTodo(id string) (TodoItem, error) {
+	if _, exists := t.todos[id]; !exists {
+		return TodoItem{}, fmt.Errorf("todo not found")
+	}
+	item := t.todos[id]
+	item.Completed = false
+	t.todos[id] = item
+	return t.todos[id], nil
+}
+
 func (t *todo_in_memory) GetAllTodos() []TodoItem {
 	items := make([]TodoItem, 0, len(t.todos))
 	for _, item := range t.todos {

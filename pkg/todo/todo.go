@@ -13,5 +13,6 @@ type TodoService interface {
 	GetCompletedTodos() []TodoItem
 	GetTodo(id string) (TodoItem, error)
 	CompleteTodo(id string) (TodoItem, error)
+	UnCompleteTodo(id string) (TodoItem, error)
 	DeleteTodo(id string) (TodoItem, error)
 }

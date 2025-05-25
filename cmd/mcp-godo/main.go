@@ -93,6 +93,15 @@ func addTools(s *server.MCPServer) {
 	)
 	s.AddTool(completeTodoTool, completeTodoHandler)
 	
+	unCompleteTodoTool := mcp.NewTool("uncomplete_todo",
+		mcp.WithDescription("Uncomplete a single todo item by ID (mark it as undone), remember you can list todos in order to check for an appropriate id"),
+		mcp.WithString("id",
+			mcp.Required(),
+			mcp.Description("The ID of the todo item"),
+		),
+	)
+	s.AddTool(unCompleteTodoTool, unCompleteTodoHandler)
+	
 	listTodosTool := mcp.NewTool("list_todos",
 		mcp.WithDescription("Lists all todo items with their IDs and completion status. If an item is not on this list it does not exist, if this is empty tell the user it is empty. Only report items included in this list."),
 	)
@@ -125,6 +134,18 @@ func addTools(s *server.MCPServer) {
 		mcp.WithDescription("Retrieve all completed todos"),
 	)
 	s.AddTool(getCompletedTodosTool, getCompletedTodosHandler)
+}
+
+func unCompleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	id, ok := request.GetArguments()["id"].(string)
+	if !ok{
+		return nil, fmt.Errorf("invalid id")
+	}
+	todo, err := todoService.UnCompleteTodo(id)
+	if err != nil{
+		return nil, fmt.Errorf("failed to uncomplete todo: %w", err)
+	}
+	return mcp.NewToolResultText(fmt.Sprintf("Todo uncompleted: ID=%s, Title=%s", todo.ID, todo.Title)), nil
 }
 
 func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

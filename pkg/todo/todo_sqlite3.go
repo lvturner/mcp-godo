@@ -43,6 +43,19 @@ func (t *todo_sqlite) CompleteTodo(id string) (TodoItem, error) {
 	return item, nil
 }
 
+func (t* todo_sqlite) UnCompleteTodo(id string) (TodoItem, error) {
+	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = $1", id)
+	if err != nil {
+		return TodoItem{}, err
+	}
+	item := TodoItem{ID: id}
+	err = t.db.QueryRow("SELECT title, completed FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed)
+	if err != nil {
+		return TodoItem{}, err
+	}
+	return item, nil
+}
+
 func (t *todo_sqlite) GetAllTodos() []TodoItem {
 	rows, err := t.db.Query("SELECT id, title, completed FROM todos")
 	if err != nil {
