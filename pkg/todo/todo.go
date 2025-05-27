@@ -20,5 +20,6 @@ type TodoService interface {
 	GetTodo(id string) (TodoItem, error)
 	CompleteTodo(id string) (TodoItem, error)
 	UnCompleteTodo(id string) (TodoItem, error)
+	SetDueDate(id string, dueDateStr time.Time) (TodoItem, error)
 	DeleteTodo(id string) (TodoItem, error)
 }

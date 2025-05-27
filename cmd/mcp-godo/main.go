@@ -139,6 +139,39 @@ func addTools(s *server.MCPServer) {
 		mcp.WithDescription("Retrieve all completed todos"),
 	)
 	s.AddTool(getCompletedTodosTool, getCompletedTodosHandler)
+	
+	updateDueDateTool := mcp.NewTool("update_due_date",
+		mcp.WithDescription("Update the due date of a single todo item by ID"),
+		mcp.WithString("id",
+			mcp.Required(),
+			mcp.Description("The ID of the todo item"),
+		),
+		mcp.WithString("due_date",
+			mcp.Required(),
+			mcp.Description("The new due date for the todo item"),
+		),
+	)
+	s.AddTool(updateDueDateTool, updateDueDateHandler)
+}
+
+func updateDueDateHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	id, ok := request.GetArguments()["id"].(string)
+	if !ok{
+		return nil, fmt.Errorf("invalid id")
+	}
+	dueDateStr, ok := request.GetArguments()["due_date"].(string)
+	if !ok{
+		return nil, fmt.Errorf("invalid due date")
+	}
+	dueDate, err := time.Parse(time.RFC3339, dueDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse due date: %w", err)
+	}
+	todo, err := todoService.SetDueDate(id, dueDate)
+	if err != nil{
+		return nil, fmt.Errorf("failed to update due date: %w", err)
+	}
+	return mcp.NewToolResultText(fmt.Sprintf("Todo updated: ID=%s, Title=%s, Due Date=%s", todo.ID, todo.Title, todo.DueDate.Format(time.RFC3339))), nil
 }
 
 func unCompleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -161,10 +194,7 @@ func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) 
 	var resultText string
 	for _, todo := range todos {
 		status := "Completed"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
-		if todo.DueDate != nil {
-			resultText += fmt.Sprintf("Due Date: %s\n", todo.DueDate)
-		}
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -177,10 +207,7 @@ func getActiveTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	var resultText string
 	for _, todo := range todos {
 		status := "Incomplete"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
-		if todo.DueDate != nil {
-			resultText += fmt.Sprintf("Due Date: %s\n", todo.DueDate)
-		}
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -194,6 +221,7 @@ func deleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete todo: %w", err)	
 	}
+
 	resultText := fmt.Sprintf("Deleted Todo: ID=%s, Title=%s", todo.ID, todo.Title)
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -211,11 +239,9 @@ func getTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 	if todo.Completed {
 		status = "Complete"
 	}
-	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s", todo.ID, todo.Title, status)
+
+	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
 	
-	if todo.DueDate != nil {
-		resultText += fmt.Sprintf("\nDue Date: %s", todo.DueDate)
-	}
 	return mcp.NewToolResultText(resultText), nil
 }
 
@@ -228,11 +254,7 @@ func listTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 		if todo.Completed {
 			status = "Complete"
 		}
-		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s", todo.ID, todo.Title, status))
-		
-		if todo.DueDate != nil {
-			todosText = append(todosText, fmt.Sprintf("Due Date: %s", todo.DueDate))
-		}
+		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate))
 	}
 	return mcp.NewToolResultText(strings.Join(todosText, "\n")), nil
 }
@@ -261,7 +283,7 @@ func addTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		if !ok {
 			return nil, errors.New("due_date must be a string")
 		}
-		dueDate, err := time.Parse("2006-01-02T15:04:05Z", dueDateStr)
+		dueDate, err := time.Parse(time.RFC3339, dueDateStr)
 		if err != nil {
 			return nil, err
 		}

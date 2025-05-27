@@ -22,7 +22,7 @@ func (t *todo_sqlite) AddTodo(title string, dueDate *time.Time) (TodoItem, error
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
 	}
 	var id string
-	err := t.db.QueryRow("INSERT INTO todos (title, completed, due_date) VALUES ($1, false, $2) RETURNING id", title, dueDate).Scan(&id)
+	err := t.db.QueryRow("INSERT INTO todos (title, completed, due_date) VALUES ($1, false, $2) RETURNING id", title).Scan(&id)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -32,6 +32,19 @@ func (t *todo_sqlite) AddTodo(title string, dueDate *time.Time) (TodoItem, error
 	}
 
 	return newItem, nil
+}
+
+func (t *todo_sqlite) SetDueDate(id string, dueDate time.Time) (TodoItem, error) {
+	_, err := t.db.Exec("UPDATE todos SET due_date = $1 WHERE id = $2", dueDate, id)
+	if err != nil {
+		return TodoItem{}, err
+	}
+	item := TodoItem{ID: id}
+	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed, &item.DueDate)
+	if err != nil {
+		return TodoItem{}, err
+	}
+	return item, nil
 }
 
 func (t *todo_sqlite) CompleteTodo(id string) (TodoItem, error) {
