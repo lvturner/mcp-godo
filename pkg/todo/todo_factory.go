@@ -16,8 +16,6 @@ type Config struct {
 
 func NewTodoServiceFromConfig(cfg Config) (TodoService, error) {
 	switch cfg.StorageType {
-	case "inmemory":
-		return NewTodoInMemory(), nil
 	case "sql":
 		db, err := sql.Open("sqlite3", cfg.SQLDBPath)
 		if err != nil {

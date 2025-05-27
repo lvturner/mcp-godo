@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"mcp-godo/pkg/todo"
 
@@ -50,6 +51,7 @@ func main() {
 	}
 }
 
+// Not really in use as my client doesn't yet support resources properly, here for future expansion. *untested*
 func addResources(s *server.MCPServer) {
 	listTodosTemplate := mcp.NewResource(
 		"todos",
@@ -74,10 +76,13 @@ func addResources(s *server.MCPServer) {
 func addTools(s *server.MCPServer) {
 	// Add tool
 	tool := mcp.NewTool("add_todo",
-		mcp.WithDescription("Add a todo item to the list, you can call list_todos to make sure that you don't accidentally add the same item twice, remember to distinguish between the output from the tool and the users direct inputs. Do not tell a user you have added something to the todo list unless you have called this function first."),
+		mcp.WithDescription("Add a todo item to the list, you can call list_todos to make sure that you don't accidentally add the same item twice, remember to distinguish between the output from the tool and the users direct inputs. Do not tell a user you have added something to the todo list unless you have called this function first. Don't assume a due date for an item unless it is explicitly stated."),
 		mcp.WithString("title",
 			mcp.Required(),
 			mcp.Description("The title of the todo item"),
+		),
+		mcp.WithString("due_date",
+			mcp.Description("The due date of the todo item in ISO 8601 format it should match the template '2006-01-02T15:04:05Z'"),
 		),
 	)
 
@@ -157,6 +162,9 @@ func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) 
 	for _, todo := range todos {
 		status := "Completed"
 		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
+		if todo.DueDate != nil {
+			resultText += fmt.Sprintf("Due Date: %s\n", todo.DueDate)
+		}
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -170,6 +178,9 @@ func getActiveTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	for _, todo := range todos {
 		status := "Incomplete"
 		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s\n", todo.ID, todo.Title, status)
+		if todo.DueDate != nil {
+			resultText += fmt.Sprintf("Due Date: %s\n", todo.DueDate)
+		}
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -201,6 +212,10 @@ func getTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		status = "Complete"
 	}
 	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s", todo.ID, todo.Title, status)
+	
+	if todo.DueDate != nil {
+		resultText += fmt.Sprintf("\nDue Date: %s", todo.DueDate)
+	}
 	return mcp.NewToolResultText(resultText), nil
 }
 
@@ -214,6 +229,10 @@ func listTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 			status = "Complete"
 		}
 		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s", todo.ID, todo.Title, status))
+		
+		if todo.DueDate != nil {
+			todosText = append(todosText, fmt.Sprintf("Due Date: %s", todo.DueDate))
+		}
 	}
 	return mcp.NewToolResultText(strings.Join(todosText, "\n")), nil
 }
@@ -236,8 +255,21 @@ func addTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 	if !ok {
 		return nil, errors.New("title must be a string")
 	}
-	
-	todoService.AddTodo(title)
+	dueDateRaw, ok := request.GetArguments()["due_date"]
+	if ok {
+		dueDateStr, ok := dueDateRaw.(string)
+		if !ok {
+			return nil, errors.New("due_date must be a string")
+		}
+		dueDate, err := time.Parse("2006-01-02T15:04:05Z", dueDateStr)
+		if err != nil {
+			return nil, err
+		}
+
+		todoService.AddTodo(title, &dueDate)
+	} else {
+		todoService.AddTodo(title, nil)
+	}
 	
 	return mcp.NewToolResultText(fmt.Sprintf("%s added to todo list", title)), nil
 }
