@@ -16,12 +16,18 @@ type Config struct {
 
 func NewTodoServiceFromConfig(cfg Config) (TodoService, error) {
 	switch cfg.StorageType {
-	case "sql":
+	case "sqlite3":
 		db, err := sql.Open("sqlite3", cfg.SQLDBPath)
 		if err != nil {
 			return nil, err
 		}
 		return NewTodoSQLite(db), nil
+	case "mariadb":
+		db, err := sql.Open("mysql", cfg.SQLDBPath)
+		if err != nil {
+			return nil, err
+		}
+		return NewTodoMariaDB(db), nil
 	default:
 		return nil, ErrUnknownStorageType
 	}
