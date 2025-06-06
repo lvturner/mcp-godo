@@ -82,7 +82,7 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The title of the todo item"),
 		),
 		mcp.WithString("due_date",
-			mcp.Description("The due date of the todo item in ISO 8601 format it should match the template '2006-01-02T15:04:05Z'"),
+			mcp.Description("The due date of the todo item in ISO 8601 format it should match the template '2006-01-02T15:04:05Z' if the user has not specified a time, assume midnight of the due date"),
 		),
 	)
 
@@ -108,7 +108,7 @@ func addTools(s *server.MCPServer) {
 	s.AddTool(unCompleteTodoTool, unCompleteTodoHandler)
 	
 	listTodosTool := mcp.NewTool("list_todos",
-		mcp.WithDescription("Lists all todo items with their IDs and completion status. If an item is not on this list it does not exist, if this is empty tell the user it is empty. Only report items included in this list."),
+		mcp.WithDescription("Lists all todo items with their IDs and completion status. If an item is not on this list it does not exist, if this is empty tell the user it is empty. Only report items included in this list. Unless we need to consider completed todos, calling 'get_active_todos' is likely a better choice"),
 	)
 	s.AddTool(listTodosTool, listTodosHandler)
 	
@@ -194,7 +194,7 @@ func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) 
 	var resultText string
 	for _, todo := range todos {
 		status := "Completed"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -207,7 +207,7 @@ func getActiveTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	var resultText string
 	for _, todo := range todos {
 		status := "Incomplete"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -240,7 +240,7 @@ func getTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		status = "Complete"
 	}
 
-	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate)
+	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
 	
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -254,7 +254,7 @@ func listTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 		if todo.Completed {
 			status = "Complete"
 		}
-		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s\n", todo.ID, todo.Title, status, todo.DueDate))
+		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate))
 	}
 	return mcp.NewToolResultText(strings.Join(todosText, "\n")), nil
 }
