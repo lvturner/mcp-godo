@@ -90,7 +90,7 @@ func addTools(s *server.MCPServer) {
 	s.AddTool(tool, addTodoHandler)
 	
 	completeTodoTool := mcp.NewTool("complete_todo",
-		mcp.WithDescription("Complete a single todo item by ID"),
+		mcp.WithDescription("Complete a single todo item by ID - you may need to call get_active_todos or list_todos in order to get the correct ID - lookup by title or other attributes won't work with this call"),
 		mcp.WithString("id",
 			mcp.Required(),
 			mcp.Description("The ID of the todo item"),
@@ -99,7 +99,7 @@ func addTools(s *server.MCPServer) {
 	s.AddTool(completeTodoTool, completeTodoHandler)
 	
 	unCompleteTodoTool := mcp.NewTool("uncomplete_todo",
-		mcp.WithDescription("Uncomplete a single todo item by ID (mark it as undone)"),
+		mcp.WithDescription("Uncomplete a single todo item by ID (mark it as undone) you may need to call get_active_todos or list_todos in order to get the correct ID - lookup by title or other attributes won't work with this call"),
 		mcp.WithString("id",
 			mcp.Required(),
 			mcp.Description("The ID of the todo item"),
@@ -131,7 +131,7 @@ func addTools(s *server.MCPServer) {
 	s.AddTool(deleteTodoTool, deleteTodoHandler)
 	
 	getActiveTodosTool := mcp.NewTool("get_active_todos",
-		mcp.WithDescription("Retrieve all active (not completed) todos"),
+		mcp.WithDescription("Retrieve all active (not completed) todos (generally prefer this over list_todos)"),
 	)
 	s.AddTool(getActiveTodosTool, getActiveTodosHandler)
 	
