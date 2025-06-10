@@ -12,6 +12,7 @@ var ErrUnknownStorageType = errors.New("unknown storage type")
 type Config struct {
 	StorageType string `json:"storage_type"`
 	SQLDBPath    string `json:"sqldb_path"`
+	HTTPPort      string `json:"http_port"`
 }
 
 func NewTodoServiceFromConfig(cfg Config) (TodoService, error) {

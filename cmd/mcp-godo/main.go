@@ -22,6 +22,7 @@ var config todo.Config
 func loadConfig(){
 	config.StorageType = os.Getenv("STORAGE_TYPE")
 	config.SQLDBPath = os.Getenv("DB_PATH")
+	config.HTTPPort = os.Getenv("HTTP_PORT")
 }
 
 func main() {
@@ -45,10 +46,11 @@ func main() {
 	addTools(s)
 	addResources(s)
 
-	// Start the stdio server
-	if err := server.ServeStdio(s); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+	httpServer := server.NewStreamableHTTPServer(s)
+	if err := httpServer.Start(fmt.Sprintf(":%s", config.HTTPPort)); err != nil {
+		fmt.Println("Error starting server:", err)
 	}
+
 }
 
 // Not really in use as my client doesn't yet support resources properly, here for future expansion. *untested*
