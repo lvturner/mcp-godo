@@ -154,6 +154,29 @@ func addTools(s *server.MCPServer) {
 		),
 	)
 	s.AddTool(updateDueDateTool, updateDueDateHandler)
+
+	titleSearchTool := mcp.NewTool("title_search",
+		mcp.WithDescription("Search todos by title"),
+		mcp.WithString("query",
+			mcp.Required(),
+			mcp.Description("The search query to use"),
+		),
+	)
+	s.AddTool(titleSearchTool, titleSearchHandler)
+}
+
+func titleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	query, ok := request.GetArguments()["query"].(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid query")
+	}
+	todos := todoService.TitleSearchTodo(query)
+	var results []string
+	for _, todo := range todos {
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
+	}
+
+	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
 }
 
 func updateDueDateHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

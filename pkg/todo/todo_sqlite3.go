@@ -150,6 +150,24 @@ func (t *todo_sqlite) DeleteTodo(id string) (TodoItem, error) {
 	return item, nil
 }
 
+func (t *todo_sqlite) TitleSearchTodo(query string) []TodoItem {
+	rows, err := t.db.Query("SELECT id, title, completed, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	var items []TodoItem
+	for rows.Next() {
+		var item TodoItem
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.CreatedDate)
+		if err != nil {				
+			log.Fatal(err)
+		}
+		items = append(items, item)
+	}
+	return items
+}
+
 func (t *todo_sqlite) Close() error {
 	return t.db.Close()
 }
