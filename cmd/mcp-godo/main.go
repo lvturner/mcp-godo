@@ -176,7 +176,11 @@ func titleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
 	}
 
-	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+	if len(results) > 0 {
+		return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+	} else {
+		return mcp.NewToolResultText("No todos found"), nil
+	}
 }
 
 func updateDueDateHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
