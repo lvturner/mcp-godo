@@ -156,7 +156,7 @@ func addTools(s *server.MCPServer) {
 	s.AddTool(updateDueDateTool, updateDueDateHandler)
 
 	titleSearchTool := mcp.NewTool("title_search",
-		mcp.WithDescription("Search todos by title"),
+		mcp.WithDescription("Search todos by title, if this returns nothing or an error, call get_active_todos to find the todo item"),
 		mcp.WithString("query",
 			mcp.Required(),
 			mcp.Description("The search query to use"),
