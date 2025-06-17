@@ -155,7 +155,6 @@ func addTools(s *server.MCPServer) {
 	)
 	s.AddTool(updateDueDateTool, updateDueDateHandler)
 
-	/*
 	titleSearchTool := mcp.NewTool("title_search",
 		mcp.WithDescription("Search todos by title, if this returns nothing or an error, call get_active_todos to find the todo "),
 		mcp.WithString("query",
@@ -164,7 +163,6 @@ func addTools(s *server.MCPServer) {
 		),
 	)
 	s.AddTool(titleSearchTool, titleSearchHandler)
-	*/
 }
 
 func titleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
