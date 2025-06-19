@@ -6,18 +6,24 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func setupSQLiteTestDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("sqlite3", ":memory:")
+func setupMariaDBTestDB(t *testing.T) (*sql.DB, func()) {
+	dsn := os.Getenv("MARIADB_TEST_DSN")
+	if dsn == "" {
+		t.Skip("MARIADB_TEST_DSN not set, skipping MariaDB tests")
+	}
+
+	db, err := sql.Open("mysql", dsn)
 	require.NoError(t, err)
 
+	// Create test table
 	_, err = db.Exec(`
-		CREATE TABLE todos (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		CREATE TABLE IF NOT EXISTS todos (
+			id INTEGER PRIMARY KEY AUTO_INCREMENT,
 			title TEXT NOT NULL,
 			completed BOOLEAN NOT NULL DEFAULT FALSE,
 			due_date DATETIME,
@@ -26,16 +32,21 @@ func setupSQLiteTestDB(t *testing.T) (*sql.DB, func()) {
 	`)
 	require.NoError(t, err)
 
+	// Clear any existing data
+	_, err = db.Exec("DELETE FROM todos")
+	require.NoError(t, err)
+
 	return db, func() {
+		_, _ = db.Exec("DROP TABLE todos")
 		db.Close()
 	}
 }
 
-func TestSQLiteTitleSearch(t *testing.T) {
-	db, cleanup := setupSQLiteTestDB(t)
+func TestMariaDBTitleSearch(t *testing.T) {
+	db, cleanup := setupMariaDBTestDB(t)
 	defer cleanup()
 
-	svc := NewTodoSQLite(db)
+	svc := NewTodoMariaDB(db)
 
 	// Add test data
 	testTitles := []string{
@@ -105,11 +116,11 @@ func TestSQLiteTitleSearch(t *testing.T) {
 	}
 }
 
-func TestSQLiteTitleSearch_WithSpecialCharacters(t *testing.T) {
-	db, cleanup := setupSQLiteTestDB(t)
+func TestMariaDBTitleSearch_WithSpecialCharacters(t *testing.T) {
+	db, cleanup := setupMariaDBTestDB(t)
 	defer cleanup()
 
-	svc := NewTodoSQLite(db)
+	svc := NewTodoMariaDB(db)
 
 	specialTitles := []string{
 		"Meeting @ 2pm",

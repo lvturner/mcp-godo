@@ -40,6 +40,21 @@ func (m *mockTodoService) GetAllTodos() []TodoItem {
 	return items
 }
 
+func (m *mockTodoService) TitleSearchTodo(query string) []TodoItem {
+	var results []TodoItem
+	for _, item := range m.todos {
+		if query == "" || containsIgnoreCase(item.Title, query) {
+			results = append(results, item)
+		}
+	}
+	return results
+}
+
+func containsIgnoreCase(s, substr string) bool {
+	s, substr = strings.ToLower(s), strings.ToLower(substr)
+	return strings.Contains(s, substr)
+}
+
 func (m *mockTodoService) GetTodo(id string) (TodoItem, error) {
 	item, exists := m.todos[id]
 	if !exists {
