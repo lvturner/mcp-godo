@@ -237,6 +237,83 @@ func TestListTodosHandler(t *testing.T) {
 	}
 }
 
+func TestTitleSearchHandler(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name          string
+		args         map[string]interface{}
+		mockFunc     func(query string) []todo.TodoItem
+		expectedText string
+		expectError  bool
+	}{
+		{
+			name: "success with results",
+			args: map[string]interface{}{"query": "test"},
+			mockFunc: func(query string) []todo.TodoItem {
+				return []todo.TodoItem{
+					{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
+					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
+				}
+			},
+			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: \nID: 2, Title: another test, Completed: true, Due Date: \n",
+			expectError: false,
+		},
+		{
+			name: "success no results",
+			args: map[string]interface{}{"query": "nonexistent"},
+			mockFunc: func(query string) []todo.TodoItem {
+				return []todo.TodoItem{}
+			},
+			expectedText: "",
+			expectError: false,
+		},
+		{
+			name: "missing query param",
+			args: map[string]interface{}{},
+			mockFunc: func(query string) []todo.TodoItem {
+				return []todo.TodoItem{}
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid query type",
+			args: map[string]interface{}{"query": 123},
+			mockFunc: func(query string) []todo.TodoItem {
+				return []todo.TodoItem{}
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockTodoService{
+				titleSearchTodoFunc: tt.mockFunc,
+			}
+			h := NewHandler(mockSvc)
+			
+			req := mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Arguments: tt.args,
+				},
+			}
+
+			result, err := h.TitleSearchHandler(nil, req)
+			
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if tt.expectedText == "" {
+					assert.Empty(t, result.Content)
+				} else {
+					assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
+				}
+			}
+		})
+	}
+}
+
 // Similar test structures can be created for other handler methods:
 // - GetTodoHandler
 // - DeleteTodoHandler  
@@ -244,4 +321,3 @@ func TestListTodosHandler(t *testing.T) {
 // - GetCompletedTodosHandler
 // - UnCompleteTodoHandler
 // - UpdateDueDateHandler
-// - TitleSearchHandler
