@@ -115,7 +115,9 @@ func TestAddTodoHandler(t *testing.T) {
 			h := NewHandler(mockSvc)
 			
 			req := mcp.CallToolRequest{
-				Params: tt.args,
+				Params: mcp.CallToolParams{
+					Arguments: tt.args,
+				},
 			}
 
 			result, err := h.AddTodoHandler(nil, req)
@@ -173,7 +175,9 @@ func TestCompleteTodoHandler(t *testing.T) {
 			h := NewHandler(mockSvc)
 			
 			req := mcp.CallToolRequest{
-				Arguments: tt.args,
+				Params: mcp.CallToolParams{
+					Arguments: tt.args,
+				},
 			}
 
 			result, err := h.CompleteTodoHandler(nil, req)
@@ -221,7 +225,9 @@ func TestListTodosHandler(t *testing.T) {
 			}
 			h := NewHandler(mockSvc)
 			
-			req := mcp.CallToolRequest{}
+			req := mcp.CallToolRequest{
+				Params: mcp.CallToolParams{},
+			}
 
 			result, err := h.ListTodosHandler(nil, req)
 			
