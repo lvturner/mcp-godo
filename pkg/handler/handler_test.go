@@ -21,7 +21,7 @@ type mockTodoService struct {
 	unCompleteTodoFunc    func(id string) (todo.TodoItem, error)
 	setDueDateFunc        func(id string, dueDate time.Time) (todo.TodoItem, error)
 	deleteTodoFunc        func(id string) (todo.TodoItem, error)
-	titleSearchTodoFunc   func(query string) []todo.TodoItem
+	titleSearchTodoFunc   func(query string, activeOnly bool) []todo.TodoItem
 }
 
 func (m *mockTodoService) AddTodo(title string, dueDate *time.Time) (todo.TodoItem, error) {
@@ -60,8 +60,8 @@ func (m *mockTodoService) DeleteTodo(id string) (todo.TodoItem, error) {
 	return m.deleteTodoFunc(id)
 }
 
-func (m *mockTodoService) TitleSearchTodo(query string) []todo.TodoItem {
-	return m.titleSearchTodoFunc(query)
+func (m *mockTodoService) TitleSearchTodo(query string, activeOnly bool) []todo.TodoItem {
+	return m.titleSearchTodoFunc(query, activeOnly)
 }
 
 func (m *mockTodoService) Close() error {
@@ -249,7 +249,7 @@ func TestTitleSearchHandler(t *testing.T) {
 		{
 			name: "success with results",
 			args: map[string]interface{}{"query": "test"},
-			mockFunc: func(query string) []todo.TodoItem {
+			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				return []todo.TodoItem{
 					{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
 					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
