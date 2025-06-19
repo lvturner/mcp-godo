@@ -2,9 +2,7 @@ package todo
 
 import (
 	"database/sql"
-	"os"
 	"testing"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
