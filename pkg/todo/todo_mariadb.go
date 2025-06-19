@@ -52,11 +52,15 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 		return TodoItem{}, err
 	}
 	
-	// Parse due date if present
+	// Parse due date if present - try both formats
 	if dueDateStr.Valid {
 		parsedDueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+			// Try ISO 8601 format if MySQL format fails
+			parsedDueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
+			if err != nil {
+				return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+			}
 		}
 		item.DueDate = &parsedDueDate
 	}
@@ -107,19 +111,29 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date
+		// Parse created date - try both MySQL and ISO 8601 formats
 		if createdDateStr.Valid {
 			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 			if err != nil {
-				log.Printf("error parsing created date: %v", err)
+				// Try ISO 8601 format if MySQL format fails
+				item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+				if err != nil {
+					log.Printf("error parsing created date: %v", err)
+				}
 			}
 		}
 		
-		// Parse due date if present
+		// Parse due date if present - try both formats
 		if dueDateStr.Valid {
 			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 			if err != nil {
-				log.Printf("error parsing due date: %v", err)
+				// Try ISO 8601 format if MySQL format fails
+				dueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
+				if err != nil {
+					log.Printf("error parsing due date: %v", err)
+				} else {
+					item.DueDate = &dueDate
+				}
 			} else {
 				item.DueDate = &dueDate
 			}
@@ -138,19 +152,27 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	
-	// Parse created date
+	// Parse created date - try both formats
 	if createdDateStr.Valid {
 		item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
+			// Try ISO 8601 format if MySQL format fails
+			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+			if err != nil {
+				return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
+			}
 		}
 	}
 	
-	// Parse due date if present
+	// Parse due date if present - try both formats
 	if dueDateStr.Valid {
 		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+			// Try ISO 8601 format if MySQL format fails
+			dueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
+			if err != nil {
+				return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+			}
 		}
 		item.DueDate = &dueDate
 	}
