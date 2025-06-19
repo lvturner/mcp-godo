@@ -61,12 +61,13 @@ func (t *todo_sqlite) CompleteTodo(id string) (TodoItem, error) {
 }
 
 func (t* todo_sqlite) UnCompleteTodo(id string) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = $1", id)
+	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = ?", id)
 	if err != nil {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed)
+	err = t.db.QueryRow("SELECT title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(
+		&item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -119,9 +120,10 @@ func (t *todo_sqlite) GetActiveTodos() []TodoItem {
 }
 
 func (t *todo_sqlite) GetCompletedTodos() []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, created_date FROM todos WHERE completed = true")
+	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = true")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error getting completed todos: %v", err)
+		return nil
 	}
 	defer rows.Close()
 	var items []TodoItem
@@ -153,17 +155,24 @@ func (t *todo_sqlite) DeleteTodo(id string) (TodoItem, error) {
 func (t *todo_sqlite) TitleSearchTodo(query string) []TodoItem {
 	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("error searching todos: %v", err)
+		return nil
 	}
 	defer rows.Close()
+	
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
 		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
-		if err != nil {				
-			log.Fatal(err)
+		if err != nil {
+			log.Printf("error scanning todo row: %v", err)
+			continue
 		}
 		items = append(items, item)
+	}
+	
+	if err = rows.Err(); err != nil {
+		log.Printf("error after scanning rows: %v", err)
 	}
 	return items
 }
