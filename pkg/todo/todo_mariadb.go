@@ -80,15 +80,9 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 		return TodoItem{}, err
 	}
 	
-	// Parse due date from MySQL format if present
-	if dueDateStr.Valid {
-		parsedDueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-		}
-		item.DueDate = &parsedDueDate
-	} else {
-		item.DueDate = nil
+	item.DueDate, err = t.parseDueDate(dueDateStr)
+	if err != nil {
+		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 	}
 	
 	return item, nil
@@ -103,12 +97,9 @@ func (t *todo_mariadb) CompleteTodo(id string) (TodoItem, error) {
 	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
 		&item.Title, &item.Completed, &dueDateStr)
-	if dueDateStr.Valid {
-		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-		}
-		item.DueDate = &dueDate
+	item.DueDate, err = t.parseDueDate(dueDateStr)
+	if err != nil {
+		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 	}
 	if err != nil {
 		return TodoItem{}, err
@@ -125,14 +116,9 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
 		&item.Title, &item.Completed, &dueDateStr)
-	if dueDateStr.Valid {
-		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-		}
-		item.DueDate = &dueDate
-	} else {
-		item.DueDate = nil
+	item.DueDate, err = t.parseDueDate(dueDateStr)
+	if err != nil {
+		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 	}
 	if err != nil {
 		return TodoItem{}, err
@@ -155,22 +141,14 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date from MySQL format
-		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
-			if err != nil {
-				log.Printf("error parsing created date: %v", err)
-			}
+		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
+		if err != nil {
+			log.Printf("error parsing created date: %v", err)
 		}
 		
-		// Parse due date from MySQL format if present
-		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-			if err != nil {
-				log.Printf("error parsing due date: %v", err)
-			} else {
-				item.DueDate = &dueDate
-			}
+		item.DueDate, err = t.parseDueDate(dueDateStr)
+		if err != nil {
+			log.Printf("error parsing due date: %v", err)
 		}
 		items = append(items, item)
 	}
@@ -217,24 +195,15 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date from MySQL format
-		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
-			if err != nil {
-				log.Printf("error parsing created date: %v", err)
-			}
+		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
+		if err != nil {
+			log.Printf("error parsing created date: %v", err)
 		}
 		
-		// Parse due date from MySQL format if present
-		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-			if err != nil {
-				log.Printf("error parsing due date: %v", err)
-				continue
-			}
-			item.DueDate = &dueDate
-		} else {
-			item.DueDate = nil
+		item.DueDate, err = t.parseDueDate(dueDateStr)
+		if err != nil {
+			log.Printf("error parsing due date: %v", err)
+			continue
 		}
 		items = append(items, item)
 	}
@@ -256,22 +225,14 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date from MySQL format
-		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
-			if err != nil {
-				log.Printf("error parsing created date: %v", err)
-			}
+		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
+		if err != nil {
+			log.Printf("error parsing created date: %v", err)
 		}
 		
-		// Parse due date if present
-		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-			if err != nil {
-				log.Printf("error parsing due date: %v", err)
-			} else {
-				item.DueDate = &dueDate
-			}
+		item.DueDate, err = t.parseDueDate(dueDateStr)
+		if err != nil {
+			log.Printf("error parsing due date: %v", err)
 		}
 		items = append(items, item)
 	}
@@ -326,23 +287,15 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 			continue
 		}
 			
-		// Parse created date from MySQL format
-		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
-			if err != nil {
-				log.Printf("error parsing created date: %v", err)
-				continue
-			}
+		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
+		if err != nil {
+			log.Printf("error parsing created date: %v", err)
+			continue
 		}
 			
-		// Parse due date if present
-		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-			if err != nil {
-				log.Printf("error parsing due date: %v", err)
-			} else {
-				item.DueDate = &dueDate
-			}
+		item.DueDate, err = t.parseDueDate(dueDateStr)
+		if err != nil {
+			log.Printf("error parsing due date: %v", err)
 		}
 		items = append(items, item)
 	}
