@@ -257,8 +257,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 	stmt, err := t.db.Prepare(`
 		SELECT id, title, completed, due_date, created_date 
 		FROM todos 
-		WHERE title LIKE CONCAT('%', ?, '%') COLLATE utf8mb4_general_ci
-		AND CONVERT(title USING utf8mb4) = title
+		WHERE title LIKE ?
 	`)
 	if err != nil {
 		log.Printf("error preparing search statement: %v", err)
@@ -266,7 +265,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(query)
+	rows, err := stmt.Query("%" + query + "%")
 	if err != nil {
 		log.Printf("error searching todos: %v", err)
 		return nil
