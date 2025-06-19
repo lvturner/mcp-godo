@@ -38,14 +38,28 @@ func setupMariaDBTestDB(t *testing.T) *sql.DB {
 	var err error
 	
 	// Retry connection for up to 60 seconds
+	var db *sql.DB
+	var err error
 	for i := 0; i < 60; i++ {
 		db, err = sql.Open("mysql", dsn)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		
+		// Try to ping and execute a test query
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		
+		err = db.PingContext(ctx)
 		if err == nil {
-			err = db.Ping()
+			_, err = db.ExecContext(ctx, "SELECT 1")
 			if err == nil {
 				break
 			}
 		}
+		
+		db.Close()
 		time.Sleep(1 * time.Second)
 	}
 	

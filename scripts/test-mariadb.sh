@@ -28,19 +28,36 @@ podman run --rm -d \
 # Wait for DB to be ready
 echo -n "Waiting for MariaDB to be ready (timeout: ${TIMEOUT}s)..."
 start_time=$(date +%s)
-while ! podman exec $CONTAINER_NAME mysqladmin ping -h localhost -u root -p$ROOT_PASSWORD --silent >/dev/null 2>&1; do
-    sleep 1
+while true; do
+    # Try to connect and execute a simple query
+    if podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "SELECT 1" >/dev/null 2>&1; then
+        break
+    fi
+    
+    # Check timeout
     elapsed=$(( $(date +%s) - start_time ))
     if [ $elapsed -ge $TIMEOUT ]; then
         echo " timeout!"
         echo "Error: MariaDB did not become ready within ${TIMEOUT} seconds"
         echo "Container logs:"
         podman logs $CONTAINER_NAME
+        echo "Trying to get error details..."
+        podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "SHOW STATUS" || true
         exit 1
     fi
+    sleep 1
     echo -n "."
 done
 echo " ready!"
+
+# Verify database exists
+echo -n "Verifying test database..."
+podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "USE $DATABASE" || {
+    echo " failed!"
+    echo "Error: Database $DATABASE does not exist"
+    exit 1
+}
+echo " OK"
 
 # Print connection info
 echo ""
