@@ -45,7 +45,7 @@ func TestSQLiteTitleSearch(t *testing.T) {
 		"Project meeting",
 	}
 	for _, title := range testTitles {
-		_, err := svc.AddTodo(title, nil)
+		_, err := svc.AddTodo(title, nil) // Explicit nil for dueDate
 		assert.NoError(t, err)
 	}
 
@@ -116,7 +116,7 @@ func TestSQLiteTitleSearch_WithSpecialCharacters(t *testing.T) {
 		"Update docs (urgent)",
 	}
 	for _, title := range specialTitles {
-		_, err := svc.AddTodo(title, nil)
+		_, err := svc.AddTodo(title, nil) // Explicit nil for dueDate
 		assert.NoError(t, err)
 	}
 
