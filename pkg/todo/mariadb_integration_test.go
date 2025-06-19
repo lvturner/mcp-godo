@@ -41,6 +41,100 @@ func setupMariaDBTestDB(t *testing.T) (*sql.DB, func()) {
 	}
 }
 
+func TestMariaDBBasicOperations(t *testing.T) {
+	db, cleanup := setupMariaDBTestDB(t)
+	defer cleanup()
+
+	svc := NewTodoMariaDB(db)
+
+	// Test AddTodo
+	item, err := svc.AddTodo("Test todo", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "Test todo", item.Title)
+	assert.False(t, item.Completed)
+	assert.NotEmpty(t, item.ID)
+
+	// Test GetTodo
+	retrieved, err := svc.GetTodo(item.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, item.ID, retrieved.ID)
+	assert.Equal(t, item.Title, retrieved.Title)
+
+	// Test CompleteTodo
+	completed, err := svc.CompleteTodo(item.ID)
+	assert.NoError(t, err)
+	assert.True(t, completed.Completed)
+
+	// Test UnCompleteTodo
+	uncompleted, err := svc.UnCompleteTodo(item.ID)
+	assert.NoError(t, err)
+	assert.False(t, uncompleted.Completed)
+
+	// Test DeleteTodo
+	deleted, err := svc.DeleteTodo(item.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, item.ID, deleted.ID)
+
+	// Verify deleted
+	_, err = svc.GetTodo(item.ID)
+	assert.Error(t, err)
+}
+
+func TestMariaDBWithDueDate(t *testing.T) {
+	db, cleanup := setupMariaDBTestDB(t)
+	defer cleanup()
+
+	svc := NewTodoMariaDB(db)
+
+	dueDate := time.Now().Add(24 * time.Hour)
+	item, err := svc.AddTodo("Todo with due date", &dueDate)
+	assert.NoError(t, err)
+	assert.NotNil(t, item.DueDate)
+	assert.Equal(t, dueDate.Truncate(time.Second), item.DueDate.Truncate(time.Second))
+
+	// Test SetDueDate
+	newDueDate := time.Now().Add(48 * time.Hour)
+	updated, err := svc.SetDueDate(item.ID, newDueDate)
+	assert.NoError(t, err)
+	assert.Equal(t, newDueDate.Truncate(time.Second), updated.DueDate.Truncate(time.Second))
+}
+
+func TestMariaDBGetAllActiveCompleted(t *testing.T) {
+	db, cleanup := setupMariaDBTestDB(t)
+	defer cleanup()
+
+	svc := NewTodoMariaDB(db)
+
+	// Add test data
+	titles := []string{"Active 1", "Active 2", "Completed 1", "Completed 2"}
+	for i, title := range titles {
+		item, err := svc.AddTodo(title, nil)
+		assert.NoError(t, err)
+		if i >= 2 {
+			_, err = svc.CompleteTodo(item.ID)
+			assert.NoError(t, err)
+		}
+	}
+
+	// Test GetAllTodos
+	all := svc.GetAllTodos()
+	assert.Len(t, all, 4)
+
+	// Test GetActiveTodos
+	active := svc.GetActiveTodos()
+	assert.Len(t, active, 2)
+	for _, item := range active {
+		assert.False(t, item.Completed)
+	}
+
+	// Test GetCompletedTodos
+	completed := svc.GetCompletedTodos()
+	assert.Len(t, completed, 2)
+	for _, item := range completed {
+		assert.True(t, item.Completed)
+	}
+}
+
 func TestMariaDBTitleSearch(t *testing.T) {
 	db, cleanup := setupMariaDBTestDB(t)
 	defer cleanup()
