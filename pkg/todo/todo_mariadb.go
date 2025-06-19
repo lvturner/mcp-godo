@@ -162,15 +162,11 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 		}
 	}
 	
-	// Parse due date if present - try both formats
+	// Parse due date from MySQL format if present
 	if dueDateStr.Valid {
-		dueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
+		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 		if err != nil {
-			// Try ISO 8601 format if MySQL format fails
-			dueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
-			if err != nil {
-				return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-			}
+			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 		}
 		item.DueDate = &dueDate
 	}
