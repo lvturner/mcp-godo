@@ -115,7 +115,7 @@ func TestAddTodoHandler(t *testing.T) {
 			h := NewHandler(mockSvc)
 			
 			req := mcp.CallToolRequest{
-				Arguments: tt.args,
+				Params: tt.args,
 			}
 
 			result, err := h.AddTodoHandler(nil, req)
