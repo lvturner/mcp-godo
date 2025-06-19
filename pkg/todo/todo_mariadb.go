@@ -89,9 +89,28 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		var dueDateStr, createdDateStr sql.NullString
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
 		if err != nil {
 			log.Fatal(err)
+		}
+		
+		// Parse created date
+		if createdDateStr.Valid {
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			if err != nil {
+				log.Printf("error parsing created date: %v", err)
+			}
+		}
+		
+		// Parse due date if present
+		if dueDateStr.Valid {
+			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			if err != nil {
+				log.Printf("error parsing due date: %v", err)
+			} else {
+				item.DueDate = &dueDate
+			}
 		}
 		items = append(items, item)
 	}
@@ -138,9 +157,28 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		var dueDateStr, createdDateStr sql.NullString
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
 		if err != nil {
 			log.Fatal(err)
+		}
+		
+		// Parse created date
+		if createdDateStr.Valid {
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			if err != nil {
+				log.Printf("error parsing created date: %v", err)
+			}
+		}
+		
+		// Parse due date if present
+		if dueDateStr.Valid {
+			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			if err != nil {
+				log.Printf("error parsing due date: %v", err)
+			} else {
+				item.DueDate = &dueDate
+			}
 		}
 		items = append(items, item)
 	}
@@ -156,9 +194,28 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		var dueDateStr, createdDateStr sql.NullString
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
 		if err != nil {
 			log.Fatal(err)
+		}
+		
+		// Parse created date
+		if createdDateStr.Valid {
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			if err != nil {
+				log.Printf("error parsing created date: %v", err)
+			}
+		}
+		
+		// Parse due date if present
+		if dueDateStr.Valid {
+			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			if err != nil {
+				log.Printf("error parsing due date: %v", err)
+			} else {
+				item.DueDate = &dueDate
+			}
 		}
 		items = append(items, item)
 	}
