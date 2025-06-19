@@ -255,7 +255,7 @@ func TestTitleSearchHandler(t *testing.T) {
 					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
 				}
 			},
-			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: \nID: 2, Title: another test, Completed: true, Due Date: \n",
+			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: \nID: 2, Title: another test, Completed: true, Due Date: ",
 			expectError: false,
 		},
 		{
@@ -305,7 +305,7 @@ func TestTitleSearchHandler(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				if tt.expectedText == "" {
-					assert.Empty(t, result.Content)
+					assert.Equal(t, "No todos found", result.Content[0].(mcp.TextContent).Text)
 				} else {
 					assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
 				}

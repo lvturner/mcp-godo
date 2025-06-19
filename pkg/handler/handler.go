@@ -34,7 +34,7 @@ func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRe
 		if todo.DueDate != nil {
 			dueDateStr = todo.DueDate.Format(time.RFC3339)
 		}
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s\n", 
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s", 
 			todo.ID, todo.Title, todo.Completed, dueDateStr))
 	}
 
