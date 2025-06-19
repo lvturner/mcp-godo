@@ -52,17 +52,15 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 		return TodoItem{}, err
 	}
 	
-	// Parse due date if present - try both formats
+	// Parse due date from MySQL format if present
 	if dueDateStr.Valid {
-		parsedDueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
+		parsedDueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 		if err != nil {
-			// Try ISO 8601 format if MySQL format fails
-			parsedDueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
-			if err != nil {
-				return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-			}
+			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 		}
 		item.DueDate = &parsedDueDate
+	} else {
+		item.DueDate = nil
 	}
 	
 	return item, nil
@@ -96,8 +94,18 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
+	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &item.DueDate)
+		&item.Title, &item.Completed, &dueDateStr)
+	if dueDateStr.Valid {
+		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+		if err != nil {
+			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+		}
+		item.DueDate = &dueDate
+	} else {
+		item.DueDate = nil
+	}
 	if err != nil {
 		return TodoItem{}, err
 	}
