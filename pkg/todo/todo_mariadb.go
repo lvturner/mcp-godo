@@ -54,7 +54,7 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 	
 	// Parse due date if present - try both formats
 	if dueDateStr.Valid {
-		parsedDueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+		parsedDueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
 		if err != nil {
 			// Try ISO 8601 format if MySQL format fails
 			parsedDueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
@@ -113,7 +113,7 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 		
 		// Parse created date - try both MySQL and ISO 8601 formats
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
 			if err != nil {
 				// Try ISO 8601 format if MySQL format fails
 				item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
@@ -125,7 +125,7 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 		
 		// Parse due date if present - try both formats
 		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			dueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
 			if err != nil {
 				// Try ISO 8601 format if MySQL format fails
 				dueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
@@ -154,7 +154,7 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	
 	// Parse created date - try both formats
 	if createdDateStr.Valid {
-		item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+		item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
 		if err != nil {
 			// Try ISO 8601 format if MySQL format fails
 			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
@@ -166,7 +166,7 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	
 	// Parse due date if present - try both formats
 	if dueDateStr.Valid {
-		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+		dueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
 		if err != nil {
 			// Try ISO 8601 format if MySQL format fails
 			dueDate, err = time.Parse(time.RFC3339, dueDateStr.String)
@@ -199,7 +199,7 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 		
 		// Parse created date
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
 			if err != nil {
 				log.Printf("error parsing created date: %v", err)
 			}
@@ -236,7 +236,7 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 		
 		// Parse created date
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
 			if err != nil {
 				log.Printf("error parsing created date: %v", err)
 			}
@@ -244,7 +244,7 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 		
 		// Parse due date if present
 		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			dueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
 			if err != nil {
 				log.Printf("error parsing due date: %v", err)
 			} else {
@@ -306,7 +306,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 			
 		// Parse created date
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
 			if err != nil {
 				log.Printf("error parsing created date: %v", err)
 				continue
@@ -315,7 +315,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 			
 		// Parse due date if present
 		if dueDateStr.Valid {
-			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			dueDate, err := time.Parse(time.RFC3339, dueDateStr.String)
 			if err != nil {
 				log.Printf("error parsing due date: %v", err)
 			} else {
