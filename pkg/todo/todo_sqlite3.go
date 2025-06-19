@@ -22,7 +22,7 @@ func (t *todo_sqlite) AddTodo(title string, dueDate *time.Time) (TodoItem, error
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
 	}
 	var id string
-	err := t.db.QueryRow("INSERT INTO todos (title, completed, due_date) VALUES (?, false, ?) RETURNING id", title, dueDate).Scan(&id)
+	err := t.db.QueryRow("INSERT INTO todos (title, completed, due_date) VALUES ($1, false, $2) RETURNING id", title).Scan(&id)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -35,12 +35,12 @@ func (t *todo_sqlite) AddTodo(title string, dueDate *time.Time) (TodoItem, error
 }
 
 func (t *todo_sqlite) SetDueDate(id string, dueDate time.Time) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET due_date = ? WHERE id = ?", dueDate, id)
+	_, err := t.db.Exec("UPDATE todos SET due_date = $1 WHERE id = $2", dueDate, id)
 	if err != nil {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(&item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+	err = t.db.QueryRow("SELECT title, completed, due_date, created_date FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -48,12 +48,12 @@ func (t *todo_sqlite) SetDueDate(id string, dueDate time.Time) (TodoItem, error)
 }
 
 func (t *todo_sqlite) CompleteTodo(id string) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET completed = true WHERE id = ?", id)
+	_, err := t.db.Exec("UPDATE todos SET completed = true WHERE id = $1", id)
 	if err != nil {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(&item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+	err = t.db.QueryRow("SELECT title, completed FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -61,13 +61,12 @@ func (t *todo_sqlite) CompleteTodo(id string) (TodoItem, error) {
 }
 
 func (t* todo_sqlite) UnCompleteTodo(id string) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = ?", id)
+	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = $1", id)
 	if err != nil {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+	err = t.db.QueryRow("SELECT title, completed FROM todos WHERE id = $1", id).Scan(&item.Title, &item.Completed)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -120,16 +119,15 @@ func (t *todo_sqlite) GetActiveTodos() []TodoItem {
 }
 
 func (t *todo_sqlite) GetCompletedTodos() []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = true")
+	rows, err := t.db.Query("SELECT id, title, completed, created_date FROM todos WHERE completed = true")
 	if err != nil {
-		log.Printf("error getting completed todos: %v", err)
-		return nil
+		log.Fatal(err)
 	}
 	defer rows.Close()
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.CreatedDate)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -140,8 +138,8 @@ func (t *todo_sqlite) GetCompletedTodos() []TodoItem {
 
 func (t *todo_sqlite) DeleteTodo(id string) (TodoItem, error) {
 	var item TodoItem
-	row := t.db.QueryRow("SELECT id, title, completed, due_date, created_date FROM todos WHERE id = ?", id)
-	err := row.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+	row := t.db.QueryRow("SELECT id, title, completed, created_date FROM todos WHERE id = ?", id)
+	err := row.Scan(&item.ID, &item.Title, &item.Completed, &item.CreatedDate)
 	if err != nil {
 		return item, err
 	}
@@ -153,26 +151,19 @@ func (t *todo_sqlite) DeleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_sqlite) TitleSearchTodo(query string) []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
+	rows, err := t.db.Query("SELECT id, title, completed, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
 	if err != nil {
-		log.Printf("error searching todos: %v", err)
-		return nil
+		log.Fatal(err)
 	}
 	defer rows.Close()
-	
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
-		if err != nil {
-			log.Printf("error scanning todo row: %v", err)
-			continue
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.CreatedDate)
+		if err != nil {				
+			log.Fatal(err)
 		}
 		items = append(items, item)
-	}
-	
-	if err = rows.Err(); err != nil {
-		log.Printf("error after scanning rows: %v", err)
 	}
 	return items
 }

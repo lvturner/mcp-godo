@@ -10,34 +10,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// parseMySQLDateTime parses a MySQL datetime string into time.Time
-func parseMySQLDateTime(dateStr sql.NullString) (time.Time, error) {
-	if !dateStr.Valid {
-		return time.Time{}, fmt.Errorf("date string is null")
-	}
-	return time.Parse("2006-01-02 15:04:05", dateStr.String)
-}
-
-// parseDueDate handles parsing of due dates with proper null handling
-func (t *todo_mariadb) parseDueDate(dueDateStr sql.NullString) (*time.Time, error) {
-	if !dueDateStr.Valid {
-		return nil, nil
-	}
-	dueDate, err := parseMySQLDateTime(dueDateStr)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing due date: %w", err)
-	}
-	return &dueDate, nil
-}
-
-// parseCreatedDate handles parsing of created dates with proper error handling
-func (t *todo_mariadb) parseCreatedDate(createdDateStr sql.NullString) (time.Time, error) {
-	if !createdDateStr.Valid {
-		return time.Time{}, fmt.Errorf("created date is null")
-	}
-	return parseMySQLDateTime(createdDateStr)
-}
-
 func NewTodoMariaDB(db *sql.DB) TodoService {
 	return &todo_mariadb{db: db}
 }
@@ -71,20 +43,12 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 	if err != nil {
 		return TodoItem{}, err
 	}
-	
 	item := TodoItem{ID: id}
-	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &dueDateStr)
+		&item.Title, &item.Completed, &item.DueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
-	
-	item.DueDate, err = t.parseDueDate(dueDateStr)
-	if err != nil {
-		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-	}
-	
 	return item, nil
 }
 
@@ -94,13 +58,8 @@ func (t *todo_mariadb) CompleteTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &dueDateStr)
-	item.DueDate, err = t.parseDueDate(dueDateStr)
-	if err != nil {
-		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-	}
+		&item.Title, &item.Completed, &item.DueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -113,13 +72,8 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &dueDateStr)
-	item.DueDate, err = t.parseDueDate(dueDateStr)
-	if err != nil {
-		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-	}
+		&item.Title, &item.Completed, &item.DueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -135,20 +89,9 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		var dueDateStr, createdDateStr sql.NullString
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 		if err != nil {
 			log.Fatal(err)
-		}
-		
-		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
-		if err != nil {
-			log.Printf("error parsing created date: %v", err)
-		}
-		
-		item.DueDate, err = t.parseDueDate(dueDateStr)
-		if err != nil {
-			log.Printf("error parsing due date: %v", err)
 		}
 		items = append(items, item)
 	}
@@ -157,23 +100,8 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 
 func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	var item TodoItem
-	var dueDateStr, createdDateStr sql.NullString
 	err := t.db.QueryRow("SELECT id, title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(
-		&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
-	if err != nil {
-		return TodoItem{}, err
-	}
-	
-	// Parse dates using helper methods
-	item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
-	if err != nil {
-		return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
-	}
-	
-	item.DueDate, err = t.parseDueDate(dueDateStr)
-	if err != nil {
-		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-	}
+		&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -189,21 +117,9 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		var dueDateStr, createdDateStr sql.NullString
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 		if err != nil {
 			log.Fatal(err)
-		}
-		
-		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
-		if err != nil {
-			log.Printf("error parsing created date: %v", err)
-		}
-		
-		item.DueDate, err = t.parseDueDate(dueDateStr)
-		if err != nil {
-			log.Printf("error parsing due date: %v", err)
-			continue
 		}
 		items = append(items, item)
 	}
@@ -219,20 +135,9 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		var dueDateStr, createdDateStr sql.NullString
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 		if err != nil {
 			log.Fatal(err)
-		}
-		
-		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
-		if err != nil {
-			log.Printf("error parsing created date: %v", err)
-		}
-		
-		item.DueDate, err = t.parseDueDate(dueDateStr)
-		if err != nil {
-			log.Printf("error parsing due date: %v", err)
 		}
 		items = append(items, item)
 	}
@@ -254,56 +159,20 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
-	if query == "" {
-		return t.GetAllTodos()
-	}
-
-	// Use prepared statement to prevent SQL injection
-	stmt, err := t.db.Prepare(`
-		SELECT id, title, completed, due_date, created_date 
-		FROM todos 
-		WHERE LOWER(title) LIKE LOWER(?)
-	`)
+	rows, err := t.db.Query("SELECT id, title, completed, due_date FROM todos WHERE title LIKE ?", "%"+query+"%")
 	if err != nil {
-		log.Printf("error preparing search statement: %v", err)
-		return nil
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query("%" + query + "%")
-	if err != nil {
-		log.Printf("error searching todos: %v", err)
-		return nil
+		log.Fatal(err)	
 	}
 	defer rows.Close()
-	
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		var dueDateStr, createdDateStr sql.NullString
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate)
 		if err != nil {
-			log.Printf("error scanning todo row: %v", err)
-			continue
-		}
-			
-		item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
-		if err != nil {
-			log.Printf("error parsing created date: %v", err)
-			continue
-		}
-			
-		item.DueDate, err = t.parseDueDate(dueDateStr)
-		if err != nil {
-			log.Printf("error parsing due date: %v", err)
+			log.Fatal(err)
 		}
 		items = append(items, item)
 	}
-	
-	if err = rows.Err(); err != nil {
-		log.Printf("error after scanning rows: %v", err)
-	}
-	
 	return items
 }
 
