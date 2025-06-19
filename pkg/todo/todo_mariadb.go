@@ -153,15 +153,11 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	
-	// Parse created date - try both formats
+	// Parse created date from MySQL format
 	if createdDateStr.Valid {
-		item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+		item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 		if err != nil {
-			// Try ISO 8601 format if MySQL format fails
-			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
-			if err != nil {
-				return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
-			}
+			return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
 		}
 	}
 	
