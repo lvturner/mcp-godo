@@ -87,14 +87,15 @@ func TestMariaDBWithDueDate(t *testing.T) {
 
 	svc := NewTodoMariaDB(db)
 
-	dueDate := time.Now().Add(24 * time.Hour)
+	// Use UTC for all time comparisons to avoid timezone issues
+	dueDate := time.Now().UTC().Add(24 * time.Hour)
 	item, err := svc.AddTodo("Todo with due date", &dueDate)
 	assert.NoError(t, err)
 	assert.NotNil(t, item.DueDate)
 	assert.Equal(t, dueDate.Truncate(time.Second), item.DueDate.Truncate(time.Second))
 
 	// Test SetDueDate
-	newDueDate := time.Now().Add(48 * time.Hour)
+	newDueDate := time.Now().UTC().Add(48 * time.Hour)
 	updated, err := svc.SetDueDate(item.ID, newDueDate)
 	assert.NoError(t, err)
 	assert.Equal(t, newDueDate.Truncate(time.Second), updated.DueDate.Truncate(time.Second))
