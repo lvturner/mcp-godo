@@ -2,14 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
-	"time"
 
+	"mcp-godo/pkg/handler"
 	"mcp-godo/pkg/todo"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -55,6 +51,8 @@ func main() {
 
 // Not really in use as my client doesn't yet support resources properly, here for future expansion. *untested*
 func addResources(s *server.MCPServer) {
+	handler := handler.NewHandler(todoService)
+
 	listTodosTemplate := mcp.NewResource(
 		"todos",
 		"List of todos",
@@ -62,7 +60,7 @@ func addResources(s *server.MCPServer) {
 		mcp.WithMIMEType("application/json"),
 	)
 	
-	s.AddResource(listTodosTemplate, listTodosResourceHandler)
+	s.AddResource(listTodosTemplate, handler.ListTodosResourceHandler)
 
 	
 	singleTodoTemplate := mcp.NewResource(
@@ -72,10 +70,12 @@ func addResources(s *server.MCPServer) {
 		mcp.WithMIMEType("application/json"),
 	)	
 	
-	s.AddResource(singleTodoTemplate, getSingleTodoResourceHandler)
+	s.AddResource(singleTodoTemplate, handler.GetSingleTodoResourceHandler)
 }
 
 func addTools(s *server.MCPServer) {
+	handler := handler.NewHandler(todoService)
+
 	// Add tool
 	tool := mcp.NewTool("add_todo",
 		mcp.WithDescription("Add a todo item to the list"),
@@ -87,9 +87,7 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The due date of the todo item in ISO 8601 format it should match the template '2006-01-02T15:04:05Z' if the user has not specified a time, assume midnight of the due date"),
 		),
 	)
-
-	// Add tool handler
-	s.AddTool(tool, addTodoHandler)
+	s.AddTool(tool, handler.AddTodoHandler)
 	
 	completeTodoTool := mcp.NewTool("complete_todo",
 		mcp.WithDescription("Complete a single todo item by ID - you may need to call get_active_todos or list_todos in order to get the correct ID - lookup by title or other attributes won't work with this call"),
@@ -98,7 +96,7 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The ID of the todo item"),
 		),
 	)
-	s.AddTool(completeTodoTool, completeTodoHandler)
+	s.AddTool(completeTodoTool, handler.CompleteTodoHandler)
 	
 	unCompleteTodoTool := mcp.NewTool("uncomplete_todo",
 		mcp.WithDescription("Uncomplete a single todo item by ID (mark it as undone) you may need to call get_active_todos or list_todos in order to get the correct ID - lookup by title or other attributes won't work with this call"),
@@ -107,12 +105,12 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The ID of the todo item"),
 		),
 	)
-	s.AddTool(unCompleteTodoTool, unCompleteTodoHandler)
+	s.AddTool(unCompleteTodoTool, handler.UnCompleteTodoHandler)
 	
 	listTodosTool := mcp.NewTool("list_todos",
 		mcp.WithDescription("Lists all todo items with their IDs and completion status."),
 	)
-	s.AddTool(listTodosTool, listTodosHandler)
+	s.AddTool(listTodosTool, handler.ListTodosHandler)
 	
 	getTodoTool := mcp.NewTool("get_todo",
 		mcp.WithDescription("Retrieve details of a single todo item by ID"),
@@ -121,7 +119,7 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The ID of the todo item"),
 		),
 	)
-	s.AddTool(getTodoTool, getTodoHandler)
+	s.AddTool(getTodoTool, handler.GetTodoHandler)
 	
 	deleteTodoTool := mcp.NewTool("delete_todo",
 		mcp.WithDescription("Delete a single todo item by ID"),		
@@ -130,17 +128,17 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The ID of the todo item"),
 		),
 	)
-	s.AddTool(deleteTodoTool, deleteTodoHandler)
+	s.AddTool(deleteTodoTool, handler.DeleteTodoHandler)
 	
 	getActiveTodosTool := mcp.NewTool("get_active_todos",
 		mcp.WithDescription("Retrieve all active (not completed) todos (generally prefer this over list_todos)"),
 	)
-	s.AddTool(getActiveTodosTool, getActiveTodosHandler)
+	s.AddTool(getActiveTodosTool, handler.GetActiveTodosHandler)
 	
 	getCompletedTodosTool := mcp.NewTool("get_completed_todos",
 		mcp.WithDescription("Retrieve all completed todos"),
 	)
-	s.AddTool(getCompletedTodosTool, getCompletedTodosHandler)
+	s.AddTool(getCompletedTodosTool, handler.GetCompletedTodosHandler)
 	
 	updateDueDateTool := mcp.NewTool("update_due_date",
 		mcp.WithDescription("Update the due date of a single todo item by ID"),
@@ -153,7 +151,7 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The new due date for the todo item"),
 		),
 	)
-	s.AddTool(updateDueDateTool, updateDueDateHandler)
+	s.AddTool(updateDueDateTool, handler.UpdateDueDateHandler)
 
 	titleSearchTool := mcp.NewTool("title_search",
 		mcp.WithDescription("Search todos by title, if this returns nothing or an error, call get_active_todos to find the todo "),
@@ -162,213 +160,6 @@ func addTools(s *server.MCPServer) {
 			mcp.Description("The search query to use"),
 		),
 	)
-	s.AddTool(titleSearchTool, titleSearchHandler)
+	s.AddTool(titleSearchTool, handler.TitleSearchHandler)
 }
 
-func titleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	query, ok := request.GetArguments()["query"].(string)
-	if !ok {
-		return nil, fmt.Errorf("invalid query")
-	}
-	todos := todoService.TitleSearchTodo(query)
-	var results []string
-	for _, todo := range todos {
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s\n", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
-	}
-
-	if len(results) > 0 {
-		return mcp.NewToolResultText(strings.Join(results, "\n")), nil
-	} else {
-		return mcp.NewToolResultText("No todos found"), nil
-	}
-}
-
-func updateDueDateHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.GetArguments()["id"].(string)
-	if !ok{
-		return nil, fmt.Errorf("invalid id")
-	}
-	dueDateStr, ok := request.GetArguments()["due_date"].(string)
-	if !ok{
-		return nil, fmt.Errorf("invalid due date")
-	}
-	dueDate, err := time.Parse(time.RFC3339, dueDateStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse due date: %w", err)
-	}
-	todo, err := todoService.SetDueDate(id, dueDate)
-	if err != nil{
-		return nil, fmt.Errorf("failed to update due date: %w", err)
-	}
-	return mcp.NewToolResultText(fmt.Sprintf("Todo updated: ID=%s, Title=%s, Due Date=%s", todo.ID, todo.Title, todo.DueDate.Format(time.RFC3339))), nil
-}
-
-func unCompleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.GetArguments()["id"].(string)
-	if !ok{
-		return nil, fmt.Errorf("invalid id")
-	}
-	todo, err := todoService.UnCompleteTodo(id)
-	if err != nil{
-		return nil, fmt.Errorf("failed to uncomplete todo: %w", err)
-	}
-	return mcp.NewToolResultText(fmt.Sprintf("Todo uncompleted: ID=%s, Title=%s", todo.ID, todo.Title)), nil
-}
-
-func getCompletedTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	todos := todoService.GetCompletedTodos()
-	if len(todos) == 0 {
-		return mcp.NewToolResultText("No completed todos found"), nil
-	}
-	var resultText string
-	for _, todo := range todos {
-		status := "Completed"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
-	}
-	return mcp.NewToolResultText(resultText), nil
-}
-
-func getActiveTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	todos := todoService.GetActiveTodos()
-	if len(todos) == 0 {
-		return mcp.NewToolResultText("No active todos found"), nil
-	}
-	var resultText string
-	for _, todo := range todos {
-		status := "Incomplete"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
-	}
-	return mcp.NewToolResultText(resultText), nil
-}
-
-func deleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.GetArguments()["id"].(string)
-	if !ok {
-		return nil, errors.New("id must be a string")
-	}
-	todo, err := todoService.DeleteTodo(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to delete todo: %w", err)	
-	}
-
-	resultText := fmt.Sprintf("Deleted Todo: ID=%s, Title=%s", todo.ID, todo.Title)
-	return mcp.NewToolResultText(resultText), nil
-}
-
-func getTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.GetArguments()["id"].(string)
-	if !ok {
-		return nil, errors.New("id must be a string")
-	}
-	todo, err := todoService.GetTodo(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get todo: %w", err)
-	}
-	status := "Incomplete"
-	if todo.Completed {
-		status = "Complete"
-	}
-
-	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
-	
-	return mcp.NewToolResultText(resultText), nil
-}
-
-
-func listTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	todos := todoService.GetAllTodos()
-	var todosText []string
-	for _, todo := range todos {
-		status := "Incomplete"
-		if todo.Completed {
-			status = "Complete"
-		}
-		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate))
-	}
-	return mcp.NewToolResultText(strings.Join(todosText, "\n")), nil
-}
-
-func completeTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	id, ok := request.GetArguments()["id"].(string)
-	if !ok {
-		return nil, errors.New("id must be a string")
-	}
-
-	completedTodo, err := todoService.CompleteTodo(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to complete todo: %v", err)
-	}
-	return mcp.NewToolResultText(fmt.Sprintf("Todo %s completed", completedTodo.Title)), nil
-}
-
-func addTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	title, ok := request.GetArguments()["title"].(string)
-	if !ok {
-		return nil, errors.New("title must be a string")
-	}
-	dueDateRaw, ok := request.GetArguments()["due_date"]
-	if ok {
-		dueDateStr, ok := dueDateRaw.(string)
-		if !ok {
-			return nil, errors.New("due_date must be a string")
-		}
-		dueDate, err := time.Parse(time.RFC3339, dueDateStr)
-		if err != nil {
-			return nil, err
-		}
-
-		todoService.AddTodo(title, &dueDate)
-	} else {
-		todoService.AddTodo(title, nil)
-	}
-	
-	return mcp.NewToolResultText(fmt.Sprintf("%s added to todo list", title)), nil
-}
-
-func listTodosResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	todos := todoService.GetAllTodos()
-	
-	jsonData, err := json.Marshal(todos)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal todos to JSON: %w", err)
-	}
-	
-	return []mcp.ResourceContents{
-		mcp.TextResourceContents{
-			URI: request.Params.URI,
-			MIMEType: "application/json",
-			Text: string(jsonData),
-		},
-	}, nil
-}
-
-func getSingleTodoResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	id := extractIDFromURI(request.Params.URI)
-	todo, err := todoService.GetTodo(id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get todo item: %w", err)
-	}	
-	
-	jsonData, err := json.Marshal(todo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal todo item: %w", err)
-	}
-
-	return []mcp.ResourceContents{
-		mcp.TextResourceContents{
-			URI:	request.Params.URI,
-			MIMEType: "application/json",
-			Text: string(jsonData),
-		},
-	}, nil
-}
-
-
-func extractIDFromURI(uri string) string {
-    parsed, err := url.Parse(uri)
-    if err != nil || parsed.Scheme != "todos" || parsed.Opaque == "" {
-        return ""
-    }
-
-    return strings.TrimPrefix(parsed.Path, "/") 
-}
