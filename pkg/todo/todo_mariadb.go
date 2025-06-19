@@ -203,14 +203,16 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 			}
 		}
 		
-		// Parse due date if present
+		// Parse due date from MySQL format if present
 		if dueDateStr.Valid {
 			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 			if err != nil {
 				log.Printf("error parsing due date: %v", err)
-			} else {
-				item.DueDate = &dueDate
+				continue
 			}
+			item.DueDate = &dueDate
+		} else {
+			item.DueDate = nil
 		}
 		items = append(items, item)
 	}
@@ -232,9 +234,9 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date
+		// Parse created date from MySQL format
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 			if err != nil {
 				log.Printf("error parsing created date: %v", err)
 			}
@@ -302,9 +304,9 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 			continue
 		}
 			
-		// Parse created date
+		// Parse created date from MySQL format
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 			if err != nil {
 				log.Printf("error parsing created date: %v", err)
 				continue
