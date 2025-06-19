@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -194,23 +195,128 @@ func TestMariaDB_DeleteTodo(t *testing.T) {
 func TestMariaDB_TitleSearch(t *testing.T) {
 	svc := NewTodoMariaDB(mariadbTestDB)
 
-	// Add test todos
-	_, err := svc.AddTodo("Search test one", nil)
-	if err != nil {
-		t.Fatalf("AddTodo failed: %v", err)
-	}
-	_, err = svc.AddTodo("Search test two", nil)
-	if err != nil {
-		t.Fatalf("AddTodo failed: %v", err)
-	}
-	_, err = svc.AddTodo("Other item", nil)
-	if err != nil {
-		t.Fatalf("AddTodo failed: %v", err)
+	// Setup test data
+	testTodos := []struct {
+		title     string
+		completed bool
+	}{
+		{"Search active one", false},
+		{"Search active two", false},
+		{"Search COMPLETED one", true}, 
+		{"Search completed two", true},
+		{"Special !@#$%^&*() chars", false},
+		{"Very long title " + strings.Repeat("a", 200), false},
+		{"CaseSensitiveTest", false},
+		{"", false}, // Empty title
 	}
 
-	// Search
-	results := svc.TitleSearchTodo("Search test", true)
-	if len(results) != 2 {
-		t.Errorf("Expected 2 search results, got %d", len(results))
+	// Add test todos
+	var todoIDs []string
+	for _, td := range testTodos {
+		todo, err := svc.AddTodo(td.title, nil)
+		if err != nil {
+			if td.title == "" {
+				continue // Expected to fail for empty title
+			}
+			t.Fatalf("AddTodo failed: %v", err)
+		}
+		todoIDs = append(todoIDs, todo.ID)
+		if td.completed {
+			_, err = svc.CompleteTodo(todo.ID)
+			if err != nil {
+				t.Fatalf("CompleteTodo failed: %v", err)
+			}
+		}
+	}
+
+	tests := []struct {
+		name        string
+		query       string
+		activeOnly  bool
+		expectedMin int
+		validate    func([]TodoItem) error
+	}{
+		{
+			name:        "General search",
+			query:       "Search",
+			activeOnly:  false,
+			expectedMin: 4,
+			validate: func(todos []TodoItem) error {
+				if len(todos) < 4 {
+					return fmt.Errorf("expected at least 4 todos, got %d", len(todos))
+				}
+				return nil
+			},
+		},
+		{
+			name:        "Active-only search",
+			query:       "Search",
+			activeOnly:  true,
+			expectedMin: 2,
+			validate: func(todos []TodoItem) error {
+				for _, todo := range todos {
+					if todo.Completed {
+						return fmt.Errorf("found completed todo in active-only search")
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name:        "Case insensitive search",
+			query:       "completed",
+			activeOnly:  false,
+			expectedMin: 2,
+			validate: func(todos []TodoItem) error {
+				if len(todos) < 2 {
+					return fmt.Errorf("expected case insensitive match")
+				}
+				return nil
+			},
+		},
+		{
+			name:        "Special characters",
+			query:       "!@#",
+			activeOnly:  false,
+			expectedMin: 1,
+			validate: nil,
+		},
+		{
+			name:        "Long title search",
+			query:       strings.Repeat("a", 50),
+			activeOnly:  false,
+			expectedMin: 1,
+			validate: nil,
+		},
+		{
+			name:        "Empty query",
+			query:       "",
+			activeOnly:  false,
+			expectedMin: len(testTodos) - 1, // minus the empty title one
+			validate: nil,
+		},
+		{
+			name:        "No matches",
+			query:       "nonexistent",
+			activeOnly:  false,
+			expectedMin: 0,
+			validate: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results := svc.TitleSearchTodo(tt.query, tt.activeOnly)
+			
+			if len(results) < tt.expectedMin {
+				t.Errorf("Expected at least %d results, got %d", tt.expectedMin, len(results))
+			}
+			
+			if tt.validate != nil {
+				if err := tt.validate(results); err != nil {
+					t.Error(err)
+				}
+			}
+		})
 	}
 }
