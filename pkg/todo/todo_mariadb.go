@@ -135,9 +135,10 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 		if dueDateStr.Valid {
 			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
 			if err != nil {
-				return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+				log.Printf("error parsing due date: %v", err)
+			} else {
+				item.DueDate = &dueDate
 			}
-			item.DueDate = &dueDate
 		}
 		items = append(items, item)
 	}
