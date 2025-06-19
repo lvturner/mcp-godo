@@ -10,6 +10,34 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// parseMySQLDateTime parses a MySQL datetime string into time.Time
+func parseMySQLDateTime(dateStr sql.NullString) (time.Time, error) {
+	if !dateStr.Valid {
+		return time.Time{}, fmt.Errorf("date string is null")
+	}
+	return time.Parse("2006-01-02 15:04:05", dateStr.String)
+}
+
+// parseDueDate handles parsing of due dates with proper null handling
+func (t *todo_mariadb) parseDueDate(dueDateStr sql.NullString) (*time.Time, error) {
+	if !dueDateStr.Valid {
+		return nil, nil
+	}
+	dueDate, err := parseMySQLDateTime(dueDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing due date: %w", err)
+	}
+	return &dueDate, nil
+}
+
+// parseCreatedDate handles parsing of created dates with proper error handling
+func (t *todo_mariadb) parseCreatedDate(createdDateStr sql.NullString) (time.Time, error) {
+	if !createdDateStr.Valid {
+		return time.Time{}, fmt.Errorf("created date is null")
+	}
+	return parseMySQLDateTime(createdDateStr)
+}
+
 func NewTodoMariaDB(db *sql.DB) TodoService {
 	return &todo_mariadb{db: db}
 }
@@ -158,21 +186,15 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 		return TodoItem{}, err
 	}
 	
-	// Parse created date from MySQL format
-	if createdDateStr.Valid {
-		item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
-		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
-		}
+	// Parse dates using helper methods
+	item.CreatedDate, err = t.parseCreatedDate(createdDateStr)
+	if err != nil {
+		return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
 	}
 	
-	// Parse due date from MySQL format if present
-	if dueDateStr.Valid {
-		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
-		if err != nil {
-			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
-		}
-		item.DueDate = &dueDate
+	item.DueDate, err = t.parseDueDate(dueDateStr)
+	if err != nil {
+		return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
 	}
 	if err != nil {
 		return TodoItem{}, err
