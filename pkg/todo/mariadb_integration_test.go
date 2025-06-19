@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"os"
 	"testing"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
