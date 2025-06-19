@@ -180,7 +180,23 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
+	if query == "" {
+		return t.GetAllTodos()
+	}
+
+	// Use prepared statement to prevent SQL injection
+	stmt, err := t.db.Prepare(`
+		SELECT id, title, completed, due_date, created_date 
+		FROM todos 
+		WHERE title LIKE CONCAT('%', ?, '%') COLLATE utf8mb4_general_ci
+	`)
+	if err != nil {
+		log.Printf("error preparing search statement: %v", err)
+		return nil
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(query)
 	if err != nil {
 		log.Printf("error searching todos: %v", err)
 		return nil
