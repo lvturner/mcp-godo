@@ -258,6 +258,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 		SELECT id, title, completed, due_date, created_date 
 		FROM todos 
 		WHERE title LIKE CONCAT('%', ?, '%') COLLATE utf8mb4_general_ci
+		AND CONVERT(title USING utf8mb4) = title
 	`)
 	if err != nil {
 		log.Printf("error preparing search statement: %v", err)
