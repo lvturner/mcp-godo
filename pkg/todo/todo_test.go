@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func setupSQLiteTestDB(t *testing.T) *sql.DB {
@@ -30,12 +30,6 @@ func setupSQLiteTestDB(t *testing.T) *sql.DB {
 
 	return db
 }
-
-func TestAddTodo(t *testing.T) {
-	db := setupSQLiteTestDB(t)
-	defer db.Close()
-
-	svc := NewTodoSQLite(db)
 
 func setupMariaDBTestDB(t *testing.T) *sql.DB {
 	dsn := "root:password@tcp(localhost:3306)/testdb"
