@@ -127,15 +127,11 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 			log.Fatal(err)
 		}
 		
-		// Parse created date - try both MySQL and ISO 8601 formats
+		// Parse created date from MySQL format
 		if createdDateStr.Valid {
-			item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
 			if err != nil {
-				// Try ISO 8601 format if MySQL format fails
-				item.CreatedDate, err = time.Parse(time.RFC3339, createdDateStr.String)
-				if err != nil {
-					log.Printf("error parsing created date: %v", err)
-				}
+				log.Printf("error parsing created date: %v", err)
 			}
 		}
 		
@@ -281,7 +277,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 	stmt, err := t.db.Prepare(`
 		SELECT id, title, completed, due_date, created_date 
 		FROM todos 
-		WHERE title LIKE ?
+		WHERE LOWER(title) LIKE LOWER(?)
 	`)
 	if err != nil {
 		log.Printf("error preparing search statement: %v", err)
