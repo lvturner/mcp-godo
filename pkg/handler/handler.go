@@ -30,7 +30,12 @@ func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRe
 	todos := h.todoService.TitleSearchTodo(query)
 	var results []string
 	for _, todo := range todos {
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s\n", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
+		var dueDateStr string
+		if todo.DueDate != nil {
+			dueDateStr = todo.DueDate.Format(time.RFC3339)
+		}
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s\n", 
+			todo.ID, todo.Title, todo.Completed, dueDateStr))
 	}
 
 	if len(results) > 0 {
