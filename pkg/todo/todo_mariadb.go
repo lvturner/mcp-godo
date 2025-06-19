@@ -218,8 +218,15 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 	return item, nil
 }
 
-func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
-	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date FROM todos WHERE title LIKE ?")
+func (t *todo_mariadb) TitleSearchTodo(query string, activeOnly bool) []TodoItem {
+	var queryStr string
+	if activeOnly {
+		queryStr = "SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ? AND completed = false"
+	} else {
+		queryStr = "SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ?"
+	}
+
+	stmt, err := t.db.Prepare(queryStr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -233,7 +240,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 		if err != nil {
 			log.Fatal(err)
 		}
