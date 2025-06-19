@@ -159,20 +159,28 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date FROM todos WHERE title LIKE ?", "%"+query+"%")
+	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE title LIKE ?", "%"+query+"%")
 	if err != nil {
-		log.Fatal(err)	
+		log.Printf("error searching todos: %v", err)
+		return nil
 	}
 	defer rows.Close()
+	
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("error scanning todo row: %v", err)
+			continue
 		}
 		items = append(items, item)
 	}
+	
+	if err = rows.Err(); err != nil {
+		log.Printf("error after scanning rows: %v", err)
+	}
+	
 	return items
 }
 
