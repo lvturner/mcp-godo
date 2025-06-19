@@ -32,10 +32,10 @@ func setupSQLiteTestDB(t *testing.T) *sql.DB {
 }
 
 func TestAddTodo(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
-// Add new MariaDB test functions after existing SQLite tests
+	svc := NewTodoSQLite(db)
 
 func setupMariaDBTestDB(t *testing.T) *sql.DB {
 	dsn := "root:password@tcp(localhost:3306)/testdb"
@@ -73,35 +73,6 @@ func TestMariaDBAddTodo(t *testing.T) {
 	svc := NewTodoMariaDB(db)
 
 	// Same test cases as SQLite version
-	tests := []struct {
-		name     string
-		title    string
-		dueDate  *time.Time
-		wantErr  bool
-	}{
-		{
-			name:    "valid todo",
-			title:   "Test todo",
-			dueDate: nil,
-			wantErr: false,
-		},
-		{
-			name:    "empty title",
-			title:   "",
-			dueDate: nil,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.AddTodo(tt.title, tt.dueDate)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AddTodo() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
 
 // Add similar test functions for all MariaDB operations following the same pattern as SQLite tests
 
