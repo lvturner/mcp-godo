@@ -43,12 +43,24 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 	if err != nil {
 		return TodoItem{}, err
 	}
+	
 	item := TodoItem{ID: id}
+	var dueDateStr sql.NullString
 	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &item.DueDate)
+		&item.Title, &item.Completed, &dueDateStr)
 	if err != nil {
 		return TodoItem{}, err
 	}
+	
+	// Parse due date if present
+	if dueDateStr.Valid {
+		parsedDueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+		if err != nil {
+			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+		}
+		item.DueDate = &parsedDueDate
+	}
+	
 	return item, nil
 }
 
