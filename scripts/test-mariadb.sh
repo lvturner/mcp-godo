@@ -7,7 +7,7 @@ IMAGE="mariadb:latest"
 PORT=3306
 ROOT_PASSWORD="password"
 DATABASE="testdb"
-TIMEOUT=30
+TIMEOUT=60
 
 # Clean up any existing container
 if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
@@ -34,6 +34,8 @@ while ! podman exec $CONTAINER_NAME mysqladmin ping -h localhost -u root -p$ROOT
     if [ $elapsed -ge $TIMEOUT ]; then
         echo " timeout!"
         echo "Error: MariaDB did not become ready within ${TIMEOUT} seconds"
+        echo "Container logs:"
+        podman logs $CONTAINER_NAME
         exit 1
     fi
     echo -n "."

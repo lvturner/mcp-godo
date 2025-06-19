@@ -39,9 +39,24 @@ func TestAddTodo(t *testing.T) {
 
 func setupMariaDBTestDB(t *testing.T) *sql.DB {
 	dsn := "root:password@tcp(localhost:3306)/testdb"
-	db, err := sql.Open("mysql", dsn)
+	
+	var db *sql.DB
+	var err error
+	
+	// Retry connection for up to 60 seconds
+	for i := 0; i < 60; i++ {
+		db, err = sql.Open("mysql", dsn)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				break
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+	
 	if err != nil {
-		t.Fatalf("failed to connect to MariaDB: %v", err)
+		t.Fatalf("failed to connect to MariaDB after retries: %v", err)
 	}
 
 	_, err = db.Exec(`
