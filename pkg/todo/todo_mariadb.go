@@ -22,7 +22,13 @@ func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, erro
 	if title == "" {
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
 	}
-	res, err := t.db.Exec("INSERT INTO todos (title, completed, due_date)  VALUES (?, ?, ?)", title, false, dueDate)
+	stmt, err := t.db.Prepare("INSERT INTO todos (title, completed, due_date) VALUES (?, ?, ?)")
+	if err != nil {
+		return TodoItem{}, err
+	}
+	defer stmt.Close()
+	
+	res, err := stmt.Exec(title, false, dueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -39,7 +45,13 @@ func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, erro
 }
 
 func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET due_date = ? WHERE id = ?", dueDate, id)
+	stmt, err := t.db.Prepare("UPDATE todos SET due_date = ? WHERE id = ?")
+	if err != nil {
+		return TodoItem{}, err
+	}
+	defer stmt.Close()
+	
+	_, err = stmt.Exec(dueDate, id)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -53,7 +65,13 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 }
 
 func (t *todo_mariadb) CompleteTodo(id string) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET completed = true WHERE id = ?", id)
+	stmt, err := t.db.Prepare("UPDATE todos SET completed = true WHERE id = ?")
+	if err != nil {
+		return TodoItem{}, err
+	}
+	defer stmt.Close()
+	
+	_, err = stmt.Exec(id)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -67,7 +85,13 @@ func (t *todo_mariadb) CompleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
-	_, err := t.db.Exec("UPDATE todos SET completed = false WHERE id = ?", id)
+	stmt, err := t.db.Prepare("UPDATE todos SET completed = false WHERE id = ?")
+	if err != nil {
+		return TodoItem{}, err
+	}
+	defer stmt.Close()
+	
+	_, err = stmt.Exec(id)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -81,7 +105,13 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) GetAllTodos() []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos")
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date, created_date FROM todos")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,7 +130,13 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 
 func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	var item TodoItem
-	err := t.db.QueryRow("SELECT id, title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date, created_date FROM todos WHERE id = ?")
+	if err != nil {
+		return TodoItem{}, err
+	}
+	defer stmt.Close()
+	
+	err = stmt.QueryRow(id).Scan(
 		&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
 	if err != nil {
 		return TodoItem{}, err
@@ -109,7 +145,13 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) GetActiveTodos() []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = false")
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = false")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,7 +169,13 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 }
 
 func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = true")
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date, created_date FROM todos WHERE completed = true")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -146,12 +194,24 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 
 func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 	var item TodoItem
-	row := t.db.QueryRow("SELECT id, title, completed, due_date FROM todos WHERE id = ?", id)
-	err := row.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate)
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date FROM todos WHERE id = ?")
 	if err != nil {
 		return item, err
 	}
-	_, err = t.db.Exec("DELETE FROM todos WHERE id = ?", id)
+	defer stmt.Close()
+	
+	row := stmt.QueryRow(id)
+	err = row.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate)
+	if err != nil {
+		return item, err
+	}
+	stmt, err = t.db.Prepare("DELETE FROM todos WHERE id = ?")
+	if err != nil {
+		return item, err
+	}
+	defer stmt.Close()
+	
+	_, err = stmt.Exec(id)
 	if err != nil {
 		return item, err
 	}
@@ -159,7 +219,13 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
-	rows, err := t.db.Query("SELECT id, title, completed, due_date FROM todos WHERE title LIKE ?", "%"+query+"%")
+	stmt, err := t.db.Prepare("SELECT id, title, completed, due_date FROM todos WHERE title LIKE ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	
+	rows, err := stmt.Query("%" + query + "%")
 	if err != nil {
 		log.Fatal(err)	
 	}
