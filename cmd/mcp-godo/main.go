@@ -173,7 +173,7 @@ func titleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	todos := todoService.TitleSearchTodo(query)
 	var results []string
 	for _, todo := range todos {
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s\n", todo.ID, todo.Title, todo.Completed, todo.DueDate.Format(time.RFC3339)))
 	}
 
 	if len(results) > 0 {
