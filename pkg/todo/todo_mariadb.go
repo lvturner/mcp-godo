@@ -71,9 +71,9 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 	if err != nil {
 		return TodoItem{}, err
 	}
-	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &item.DueDate)
+	var item TodoItem
+	err = t.db.QueryRow("SELECT id, title, completed, due_date FROM todos WHERE id = ?", id).Scan(
+		&item.ID, &item.Title, &item.Completed, &item.DueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
