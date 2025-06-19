@@ -58,12 +58,21 @@ kill $LOG_PID 2>/dev/null || true
 
 # Verify database exists by connecting from host
 echo -n "Verifying test database..."
-if ! mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "USE $DATABASE" 2>/dev/null; then
-    echo " failed!"
-    echo "Error: Could not access database $DATABASE"
-    exit 1
-fi
-echo " OK"
+for i in {1..10}; do
+    if mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "USE $DATABASE" 2>/dev/null; then
+        echo " OK"
+        break
+    fi
+    if [ $i -eq 10 ]; then
+        echo " failed!"
+        echo "Error: Could not access database $DATABASE after 10 attempts"
+        echo "Trying to list databases..."
+        mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "SHOW DATABASES" || true
+        exit 1
+    fi
+    sleep 2
+    echo -n "."
+done
 
 # Print connection info
 echo ""
