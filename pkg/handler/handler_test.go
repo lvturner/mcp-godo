@@ -126,7 +126,7 @@ func TestAddTodoHandler(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedText, result.GetText())
+				assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
 			}
 		})
 	}
@@ -186,7 +186,7 @@ func TestCompleteTodoHandler(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedText, result.GetText())
+				assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
 			}
 		})
 	}
