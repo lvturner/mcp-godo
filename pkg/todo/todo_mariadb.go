@@ -100,8 +100,29 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 
 func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	var item TodoItem
+	var dueDateStr, createdDateStr sql.NullString
 	err := t.db.QueryRow("SELECT id, title, completed, due_date, created_date FROM todos WHERE id = ?", id).Scan(
-		&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
+	if err != nil {
+		return TodoItem{}, err
+	}
+	
+	// Parse created date
+	if createdDateStr.Valid {
+		item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+		if err != nil {
+			return TodoItem{}, fmt.Errorf("error parsing created date: %w", err)
+		}
+	}
+	
+	// Parse due date if present
+	if dueDateStr.Valid {
+		dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+		if err != nil {
+			return TodoItem{}, fmt.Errorf("error parsing due date: %w", err)
+		}
+		item.DueDate = &dueDate
+	}
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -169,10 +190,30 @@ func (t *todo_mariadb) TitleSearchTodo(query string) []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &item.DueDate, &item.CreatedDate)
+		var dueDateStr, createdDateStr sql.NullString
+		err = rows.Scan(&item.ID, &item.Title, &item.Completed, &dueDateStr, &createdDateStr)
 		if err != nil {
 			log.Printf("error scanning todo row: %v", err)
 			continue
+		}
+			
+		// Parse created date
+		if createdDateStr.Valid {
+			item.CreatedDate, err = time.Parse("2006-01-02 15:04:05", createdDateStr.String)
+			if err != nil {
+				log.Printf("error parsing created date: %v", err)
+				continue
+			}
+		}
+			
+		// Parse due date if present
+		if dueDateStr.Valid {
+			dueDate, err := time.Parse("2006-01-02 15:04:05", dueDateStr.String)
+			if err != nil {
+				log.Printf("error parsing due date: %v", err)
+			} else {
+				item.DueDate = &dueDate
+			}
 		}
 		items = append(items, item)
 	}
