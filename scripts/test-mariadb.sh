@@ -25,12 +25,16 @@ podman run --rm -d \
   -p $PORT:3306 \
   $IMAGE
 
+# Start streaming logs in background
+podman logs -f $CONTAINER_NAME > >(while read line; do echo "[mariadb] $line"; done) 2>&1 &
+LOG_PID=$!
+
 # Wait for DB to be ready
 echo -n "Waiting for MariaDB to be ready (timeout: ${TIMEOUT}s)..."
 start_time=$(date +%s)
 while true; do
-    # Try to connect and execute a simple query
-    if podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "SELECT 1" >/dev/null 2>&1; then
+    # Check if port is accessible from host (bypasses container networking)
+    if nc -z localhost $PORT 2>/dev/null; then
         break
     fi
     
@@ -38,11 +42,10 @@ while true; do
     elapsed=$(( $(date +%s) - start_time ))
     if [ $elapsed -ge $TIMEOUT ]; then
         echo " timeout!"
+        kill $LOG_PID 2>/dev/null || true
         echo "Error: MariaDB did not become ready within ${TIMEOUT} seconds"
-        echo "Container logs:"
-        podman logs $CONTAINER_NAME
-        echo "Trying to get error details..."
-        podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "SHOW STATUS" || true
+        echo "Checking host port ${PORT}..."
+        netstat -tuln | grep $PORT || true
         exit 1
     fi
     sleep 1
@@ -50,13 +53,16 @@ while true; do
 done
 echo " ready!"
 
-# Verify database exists
+# Stop log streaming
+kill $LOG_PID 2>/dev/null || true
+
+# Verify database exists by connecting from host
 echo -n "Verifying test database..."
-podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "USE $DATABASE" || {
+if ! mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "USE $DATABASE" 2>/dev/null; then
     echo " failed!"
-    echo "Error: Database $DATABASE does not exist"
+    echo "Error: Could not access database $DATABASE"
     exit 1
-}
+fi
 echo " OK"
 
 # Print connection info
