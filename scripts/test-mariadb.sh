@@ -56,23 +56,46 @@ echo " ready!"
 # Stop log streaming
 kill $LOG_PID 2>/dev/null || true
 
-# Verify database exists by connecting from host
+# Verify database exists
 echo -n "Verifying test database..."
 for i in {1..10}; do
-    if mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "USE $DATABASE" 2>/dev/null; then
-        echo " OK"
+    # First try using host mysql client if available
+    if command -v mysql >/dev/null 2>&1; then
+        if mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "USE $DATABASE" 2>/dev/null; then
+            echo " OK (using host mysql client)"
+            break
+        fi
+    fi
+    
+    # Fall back to container exec if host mysql not available
+    if podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "USE $DATABASE" >/dev/null 2>&1; then
+        echo " OK (using container mysql)"
         break
     fi
+    
     if [ $i -eq 10 ]; then
         echo " failed!"
         echo "Error: Could not access database $DATABASE after 10 attempts"
-        echo "Trying to list databases..."
-        mysql -h 127.0.0.1 -P $PORT -u root -p$ROOT_PASSWORD -e "SHOW DATABASES" || true
+        echo "Trying to list databases from container..."
+        podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "SHOW DATABASES" || true
+        echo "Checking if testdb exists in container..."
+        podman exec $CONTAINER_NAME sh -c "[ -d /var/lib/mysql/testdb ] && echo 'testdb directory exists' || echo 'testdb directory missing'"
         exit 1
     fi
     sleep 2
     echo -n "."
 done
+
+# Ensure testdb exists (create if missing)
+if ! podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "USE $DATABASE" >/dev/null 2>&1; then
+    echo -n "Creating test database..."
+    if ! podman exec $CONTAINER_NAME mysql -u root -p$ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS $DATABASE"; then
+        echo " failed!"
+        echo "Error: Could not create database $DATABASE"
+        exit 1
+    fi
+    echo " OK"
+fi
 
 # Print connection info
 echo ""
