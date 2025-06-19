@@ -73,8 +73,34 @@ func TestMariaDBAddTodo(t *testing.T) {
 	svc := NewTodoMariaDB(db)
 
 	// Same test cases as SQLite version
+	tests := []struct {
+		name     string
+		title    string
+		dueDate  *time.Time
+		wantErr  bool
+	}{
+		{
+			name:    "valid todo",
+			title:   "Test todo",
+			dueDate: nil,
+			wantErr: false,
+		},
+		{
+			name:    "empty title",
+			title:   "",
+			dueDate: nil,
+			wantErr: true,
+		},
+	}
 
-// Add similar test functions for all MariaDB operations following the same pattern as SQLite tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.AddTodo(tt.title, tt.dueDate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AddTodo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 
 	tests := []struct {
 		name     string
@@ -107,7 +133,7 @@ func TestMariaDBAddTodo(t *testing.T) {
 }
 
 func TestCompleteTodo(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
@@ -135,7 +161,7 @@ func TestCompleteTodo(t *testing.T) {
 }
 
 func TestGetAllTodos(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
@@ -157,7 +183,7 @@ func TestGetAllTodos(t *testing.T) {
 }
 
 func TestGetActiveCompletedTodos(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
@@ -192,7 +218,7 @@ func TestGetActiveCompletedTodos(t *testing.T) {
 }
 
 func TestSetDueDate(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
@@ -215,7 +241,7 @@ func TestSetDueDate(t *testing.T) {
 }
 
 func TestTitleSearch(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
@@ -238,7 +264,7 @@ func TestTitleSearch(t *testing.T) {
 }
 
 func TestDeleteTodo(t *testing.T) {
-	db := setupTestDB(t)
+	db := setupSQLiteTestDB(t)
 	defer db.Close()
 
 	svc := NewTodoSQLite(db)
