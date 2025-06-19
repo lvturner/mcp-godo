@@ -57,6 +57,71 @@ func TestTodoService(t *testing.T) {
 		assert.False(t, item.Completed)
 	})
 
+	t.Run("TitleSearchTodo_Mock", func(t *testing.T) {
+		svc := newMockTodoService()
+		
+		// Add test data
+		testTitles := []string{
+			"Buy groceries",
+			"Finish project",
+			"Buy new laptop",
+			"Call mom",
+			"Buy birthday gift",
+		}
+		for _, title := range testTitles {
+			_, err := svc.AddTodo(title, nil)
+			assert.NoError(t, err)
+		}
+
+		tests := []struct {
+			name     string
+			query    string
+			expected []string
+		}{
+			{
+				name:     "exact match",
+				query:    "Buy groceries",
+				expected: []string{"Buy groceries"},
+			},
+			{
+				name:     "partial match",
+				query:    "Buy",
+				expected: []string{"Buy groceries", "Buy new laptop", "Buy birthday gift"},
+			},
+			{
+				name:     "case insensitive",
+				query:    "buy",
+				expected: []string{"Buy groceries", "Buy new laptop", "Buy birthday gift"},
+			},
+			{
+				name:     "no match",
+				query:    "nonexistent",
+				expected: []string{},
+			},
+			{
+				name:     "empty query returns all",
+				query:    "",
+				expected: testTitles,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				results := svc.TitleSearchTodo(tt.query)
+				assert.Equal(t, len(tt.expected), len(results))
+				
+				resultTitles := make([]string, len(results))
+				for i, item := range results {
+					resultTitles[i] = item.Title
+				}
+				
+				for _, expected := range tt.expected {
+					assert.Contains(t, resultTitles, expected)
+				}
+			})
+		}
+	})
+
 	t.Run("GetTodo", func(t *testing.T) {
 		svc := newMockTodoService()
 		added, _ := svc.AddTodo("test", nil)
