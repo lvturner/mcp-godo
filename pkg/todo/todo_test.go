@@ -2,14 +2,14 @@ package todo
 
 import (
 	"database/sql"
-	"os"
 	"testing"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-func setupTestDB(t *testing.T) *sql.DB {
+func setupSQLiteTestDB(t *testing.T) *sql.DB {
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
@@ -35,7 +35,75 @@ func TestAddTodo(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
-	svc := NewTodoSQLite(db)
+// Add new MariaDB test functions after existing SQLite tests
+
+func setupMariaDBTestDB(t *testing.T) *sql.DB {
+	dsn := "root:password@tcp(localhost:3306)/testdb"
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatalf("failed to connect to MariaDB: %v", err)
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS todos (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			title VARCHAR(255) NOT NULL,
+			completed BOOLEAN NOT NULL DEFAULT FALSE,
+			due_date DATETIME NULL,
+			created_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		t.Fatalf("failed to create test table: %v", err)
+	}
+
+	// Clear any existing test data
+	_, err = db.Exec("TRUNCATE TABLE todos")
+	if err != nil {
+		t.Fatalf("failed to truncate test table: %v", err)
+	}
+
+	return db
+}
+
+func TestMariaDBAddTodo(t *testing.T) {
+	db := setupMariaDBTestDB(t)
+	defer db.Close()
+
+	svc := NewTodoMariaDB(db)
+
+	// Same test cases as SQLite version
+	tests := []struct {
+		name     string
+		title    string
+		dueDate  *time.Time
+		wantErr  bool
+	}{
+		{
+			name:    "valid todo",
+			title:   "Test todo",
+			dueDate: nil,
+			wantErr: false,
+		},
+		{
+			name:    "empty title",
+			title:   "",
+			dueDate: nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.AddTodo(tt.title, tt.dueDate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AddTodo() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// Add similar test functions for all MariaDB operations following the same pattern as SQLite tests
 
 	tests := []struct {
 		name     string
