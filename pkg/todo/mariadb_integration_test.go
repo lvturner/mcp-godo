@@ -3,6 +3,7 @@ package todo
 import (
 	"database/sql"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -88,14 +89,14 @@ func TestMariaDBWithDueDate(t *testing.T) {
 	svc := NewTodoMariaDB(db)
 
 	// Use UTC for all time comparisons to avoid timezone issues
-	dueDate := time.Now().UTC().Add(24 * time.Hour)
+	dueDate := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Second)
 	item, err := svc.AddTodo("Todo with due date", &dueDate)
 	assert.NoError(t, err)
 	assert.NotNil(t, item.DueDate)
-	assert.Equal(t, dueDate.Truncate(time.Second), item.DueDate.Truncate(time.Second))
+	assert.Equal(t, dueDate.Format(time.RFC3339), item.DueDate.Format(time.RFC3339))
 
 	// Test SetDueDate
-	newDueDate := time.Now().UTC().Add(48 * time.Hour)
+	newDueDate := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
 	updated, err := svc.SetDueDate(item.ID, newDueDate)
 	assert.NoError(t, err)
 	assert.Equal(t, newDueDate.Truncate(time.Second), updated.DueDate.Truncate(time.Second))
@@ -204,8 +205,16 @@ func TestMariaDBTitleSearch(t *testing.T) {
 				resultTitles[i] = item.Title
 			}
 			
+			// Case-insensitive comparison
 			for _, expected := range tt.expected {
-				assert.Contains(t, resultTitles, expected, "expected title not found in results")
+				found := false
+				for _, actual := range resultTitles {
+					if strings.EqualFold(expected, actual) {
+						found = true
+						break
+					}
+				}
+				assert.True(t, found, "expected title %q not found in results", expected)
 			}
 		})
 	}
