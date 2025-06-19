@@ -27,7 +27,8 @@ func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRe
 	if !ok {
 		return nil, fmt.Errorf("invalid query")
 	}
-	todos := h.todoService.TitleSearchTodo(query)
+	activeOnly, _ := request.GetArguments()["active_only"].(bool)
+	todos := h.todoService.TitleSearchTodo(query, activeOnly)
 	var results []string
 	for _, todo := range todos {
 		var dueDateStr string

@@ -158,6 +158,10 @@ func addTools(s *server.MCPServer) {
 			mcp.Required(),
 			mcp.Description("The search query to use"),
 		),
+		mcp.WithString("active_only",
+			mcp.DefaultBool(true),
+			mcp.Description("Whether to only search active todos or not"),
+		),
 	)
 	s.AddTool(titleSearchTool, handler.TitleSearchHandler)
 }

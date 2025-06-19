@@ -242,7 +242,7 @@ func TestTitleSearchHandler(t *testing.T) {
 	tests := []struct {
 		name          string
 		args         map[string]interface{}
-		mockFunc     func(query string) []todo.TodoItem
+		mockFunc     func(query string, activeOnly bool) []todo.TodoItem
 		expectedText string
 		expectError  bool
 	}{
@@ -259,9 +259,26 @@ func TestTitleSearchHandler(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "success with activeOnly filter",
+			args: map[string]interface{}{"query": "test", "active_only": true},
+			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
+				if activeOnly {
+					return []todo.TodoItem{
+						{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
+					}
+				}
+				return []todo.TodoItem{
+					{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
+					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
+				}
+			},
+			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: ",
+			expectError: false,
+		},
+		{
 			name: "success no results",
 			args: map[string]interface{}{"query": "nonexistent"},
-			mockFunc: func(query string) []todo.TodoItem {
+			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				return []todo.TodoItem{}
 			},
 			expectedText: "",
@@ -270,7 +287,7 @@ func TestTitleSearchHandler(t *testing.T) {
 		{
 			name: "missing query param",
 			args: map[string]interface{}{},
-			mockFunc: func(query string) []todo.TodoItem {
+			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				return []todo.TodoItem{}
 			},
 			expectError: true,
@@ -278,7 +295,7 @@ func TestTitleSearchHandler(t *testing.T) {
 		{
 			name: "invalid query type",
 			args: map[string]interface{}{"query": 123},
-			mockFunc: func(query string) []todo.TodoItem {
+			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				return []todo.TodoItem{}
 			},
 			expectError: true,

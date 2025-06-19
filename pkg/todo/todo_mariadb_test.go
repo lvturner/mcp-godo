@@ -209,7 +209,7 @@ func TestMariaDB_TitleSearch(t *testing.T) {
 	}
 
 	// Search
-	results := svc.TitleSearchTodo("Search test")
+	results := svc.TitleSearchTodo("Search test", true)
 	if len(results) != 2 {
 		t.Errorf("Expected 2 search results, got %d", len(results))
 	}
