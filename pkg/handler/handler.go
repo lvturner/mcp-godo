@@ -101,7 +101,7 @@ func (h *Handler) GetActiveTodosHandler(ctx context.Context, request mcp.CallToo
 		status := "Incomplete"
 		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
 	}
-	return mcp.NewToolResultText(resultText), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Today's date is %s, and the list of todo items is: %s", time.Now().Format("2006-01-02"), resultText)), nil
 }
 
 func (h *Handler) DeleteTodoHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
