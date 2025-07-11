@@ -5,11 +5,11 @@ import (
 )
 
 type TodoItem struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Completed bool `json:"completed"`
-	DueDate *time.Time `json:"due_date"`
-	CreatedDate time.Time `json:"created_date"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	CompletedAt *time.Time `json:"completed_at"` // nil means not completed
+	DueDate     *time.Time `json:"due_date"`
+	CreatedDate time.Time  `json:"created_date"`
 }
 
 type TodoService interface {

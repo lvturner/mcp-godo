@@ -44,8 +44,8 @@ func TestMariaDB_AddTodo(t *testing.T) {
 	if todo.CompletedAt != nil {
 		t.Error("New todo should not be completed")
 	}
-	if todo.CreatedDate.IsZero() {
-		t.Error("CreatedDate should be set")
+	if todo.CreatedDate.IsZero() || time.Since(todo.CreatedDate) > time.Second {
+		t.Errorf("CreatedDate should be recent, got %v", todo.CreatedDate)
 	}
 
 	// Test adding todo with due date

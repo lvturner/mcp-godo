@@ -22,24 +22,33 @@ func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, erro
 	if title == "" {
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
 	}
-	stmt, err := t.db.Prepare("INSERT INTO todos (title, completed_at, due_date) VALUES (?, NULL, ?)")
+	
+	// Use current timestamp for created_date
+	createdDate := time.Now()
+	
+	stmt, err := t.db.Prepare("INSERT INTO todos (title, completed_at, due_date, created_date) VALUES (?, NULL, ?, ?)")
 	if err != nil {
 		return TodoItem{}, err
 	}
 	defer stmt.Close()
 	
-	res, err := stmt.Exec(title, dueDate)
+	res, err := stmt.Exec(title, dueDate, createdDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
+	
 	id, err := res.LastInsertId()
 	if err != nil {
 		return TodoItem{}, err
 	}
+	
 	idStr := strconv.FormatInt(id, 10)
-	newItem := TodoItem{ID: idStr, Title: title, CompletedAt: nil}
-	if dueDate != nil {
-		newItem.DueDate = dueDate
+	newItem := TodoItem{
+		ID:          idStr,
+		Title:       title,
+		CompletedAt: nil,
+		DueDate:     dueDate,
+		CreatedDate: createdDate,
 	}
 	return newItem, nil
 }
@@ -56,8 +65,8 @@ func (t *todo_mariadb) SetDueDate(id string, dueDate time.Time) (TodoItem, error
 		return TodoItem{}, err
 	}
 	item := TodoItem{ID: id}
-	err = t.db.QueryRow("SELECT title, completed, due_date FROM todos WHERE id = ?", id).Scan(
-		&item.Title, &item.Completed, &item.DueDate)
+	err = t.db.QueryRow("SELECT title, completed_at, due_date FROM todos WHERE id = ?", id).Scan(
+		&item.Title, &item.CompletedAt, &item.DueDate)
 	if err != nil {
 		return TodoItem{}, err
 	}
