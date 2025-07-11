@@ -41,8 +41,11 @@ func TestMariaDB_AddTodo(t *testing.T) {
 	if todo.Title != "Test todo" {
 		t.Errorf("Expected title 'Test todo', got '%s'", todo.Title)
 	}
-	if todo.Completed {
+	if todo.CompletedAt != nil {
 		t.Error("New todo should not be completed")
+	}
+	if todo.CreatedDate.IsZero() {
+		t.Error("CreatedDate should be set")
 	}
 
 	// Test adding todo with due date
@@ -76,8 +79,13 @@ func TestMariaDB_CompleteUncomplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CompleteTodo failed: %v", err)
 	}
-	if !completed.Completed {
-		t.Error("Todo should be completed")
+	if completed.CompletedAt == nil {
+		t.Error("CompletedAt should be set after completing")
+	} else {
+		// Check that the completion time is recent (within the last minute)
+		if time.Since(*completed.CompletedAt) > time.Minute {
+			t.Errorf("CompletedAt is too old: %v", completed.CompletedAt)
+		}
 	}
 
 	// Uncomplete it
@@ -85,8 +93,8 @@ func TestMariaDB_CompleteUncomplete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UnCompleteTodo failed: %v", err)
 	}
-	if uncompleted.Completed {
-		t.Error("Todo should be uncompleted")
+	if uncompleted.CompletedAt != nil {
+		t.Error("CompletedAt should be nil after uncompleting")
 	}
 }
 
@@ -141,8 +149,8 @@ func TestMariaDB_GetOperations(t *testing.T) {
 		t.Error("Expected active todos")
 	}
 	for _, todo := range active {
-		if todo.Completed {
-			t.Error("Active todos should not be completed")
+		if todo.CompletedAt != nil {
+			t.Error("Active todos should have nil CompletedAt")
 		}
 	}
 
@@ -152,8 +160,8 @@ func TestMariaDB_GetOperations(t *testing.T) {
 		t.Error("Expected completed todos")
 	}
 	for _, todo := range completedTodos {
-		if !todo.Completed {
-			t.Error("Completed todos should be marked as such")
+		if todo.CompletedAt == nil {
+			t.Error("Completed todos should have non-nil CompletedAt")
 		}
 	}
 
@@ -202,7 +210,7 @@ func TestMariaDB_TitleSearch(t *testing.T) {
 	}{
 		{"Search active one", false},
 		{"Search active two", false},
-		{"Search COMPLETED one", true}, 
+		{"Search COMPLETED one", true},
 		{"Search completed two", true},
 		{"Special !@#$%^&*() chars", false},
 		{"Very long title " + strings.Repeat("a", 200), false},
@@ -255,7 +263,7 @@ func TestMariaDB_TitleSearch(t *testing.T) {
 			expectedMin: 2,
 			validate: func(todos []TodoItem) error {
 				for _, todo := range todos {
-					if todo.Completed {
+					if todo.CompletedAt != nil {
 						return fmt.Errorf("found completed todo in active-only search")
 					}
 				}
