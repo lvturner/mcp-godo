@@ -39,37 +39,12 @@ func main() {
 	)
 
 	addTools(s)
-	addResources(s)
 
 	httpServer := server.NewStreamableHTTPServer(s)
 	if err := httpServer.Start(fmt.Sprintf(":%s", config.HTTPPort)); err != nil {
 		fmt.Println("Error starting server:", err)
 	}
 
-}
-
-// Not really in use as my client doesn't yet support resources properly, here for future expansion. *untested*
-func addResources(s *server.MCPServer) {
-	handler := handler.NewHandler(todoService)
-
-	listTodosTemplate := mcp.NewResource(
-		"todos",
-		"List of todos",
-		mcp.WithResourceDescription("Full list of todos"),
-		mcp.WithMIMEType("application/json"),
-	)
-	
-	s.AddResource(listTodosTemplate, handler.ListTodosResourceHandler)
-
-	
-	singleTodoTemplate := mcp.NewResource(
-		"todos://{id}",
-		"Single todo list item",
-		mcp.WithResourceDescription("Single todo list item"),
-		mcp.WithMIMEType("application/json"),
-	)	
-	
-	s.AddResource(singleTodoTemplate, handler.GetSingleTodoResourceHandler)
 }
 
 func addTools(s *server.MCPServer) {
