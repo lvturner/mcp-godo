@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 		id INT AUTO_INCREMENT PRIMARY KEY,
 		todo_id VARCHAR(255) NOT NULL,
 		frequency VARCHAR(50) NOT NULL,
-		interval INT NOT NULL,
+		` + "`interval`" + ` INT NOT NULL,
 		until DATETIME,
 		count INT
 	)`)
