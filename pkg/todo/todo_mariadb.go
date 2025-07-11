@@ -19,7 +19,7 @@ type todo_mariadb struct {
 }
 
 func (t *todo_mariadb) AddRecurrencePattern(pattern RecurrencePattern) (int64, error) {
-	stmt, err := t.db.Prepare("INSERT INTO recurrence_patterns (todo_id, frequency, interval, until, count) VALUES (?, ?, ?, ?, ?)")
+	stmt, err := t.db.Prepare("INSERT INTO recurrence_patterns (todo_id, frequency, `interval`, until, count) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		return 0, err
 	}
@@ -35,7 +35,7 @@ func (t *todo_mariadb) AddRecurrencePattern(pattern RecurrencePattern) (int64, e
 
 func (t *todo_mariadb) GetRecurrencePatternByID(id int64) (RecurrencePattern, error) {
 	var pattern RecurrencePattern
-	err := t.db.QueryRow("SELECT id, todo_id, frequency, interval, until, count FROM recurrence_patterns WHERE id = ?", id).Scan(
+	err := t.db.QueryRow("SELECT id, todo_id, frequency, `interval`, until, count FROM recurrence_patterns WHERE id = ?", id).Scan(
 		&pattern.ID, &pattern.TodoID, &pattern.Frequency, &pattern.Interval, &pattern.Until, &pattern.Count)
 	if err != nil {
 		return RecurrencePattern{}, err

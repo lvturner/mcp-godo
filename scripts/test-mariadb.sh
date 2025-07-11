@@ -52,27 +52,7 @@ echo " ready!"
 
 # Verify database exists and create tables
 echo -n "Setting up test database..."
-podman exec $CONTAINER_NAME mariadb -u root -p$ROOT_PASSWORD -e "
-USE $DATABASE;
-CREATE TABLE IF NOT EXISTS todos (
-  id int(11) NOT NULL AUTO_INCREMENT,
-  title varchar(255) NOT NULL,
-  completed_at datetime DEFAULT NULL,
-  due_date datetime DEFAULT NULL,
-  created_date datetime NOT NULL DEFAULT current_timestamp(),
-  reference_id INT DEFAULT NULL,
-  PRIMARY KEY (id)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-CREATE TABLE IF NOT EXISTS recurrence_pattern (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title_template VARCHAR(255) NOT NULL,
-  recurrence_rule ENUM('DAILY','WEEKLY','MONTHLY','YEARLY') NOT NULL,
-  interval INT NOT NULL DEFAULT 1,
-  min_days_between INT DEFAULT NULL,
-  anchor_date DATETIME NOT NULL,
-  active TINYINT(1) NOT NULL DEFAULT 1
-);" || {
+podman exec -i $CONTAINER_NAME mariadb -u root -p$ROOT_PASSWORD < sql/setup_test_db.sql || {
     echo " failed!"
     echo "Error: Failed to setup test database"
     exit 1

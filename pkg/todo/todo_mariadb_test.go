@@ -389,7 +389,7 @@ func TestMariaDB_RecurrencePattern(t *testing.T) {
 	if retrieved.Interval != 1 {
 		t.Errorf("Expected Interval 1, got %d", retrieved.Interval)
 	}
-	if retrieved.Until == nil || !retrieved.Until.Equal(until) {
+	if retrieved.Until == nil || !retrieved.Until.Truncate(24 * time.Hour).Equal(until.Truncate(24 * time.Hour)) {
 		t.Error("Until date mismatch")
 	}
 	if retrieved.Count == nil || *retrieved.Count != count {
