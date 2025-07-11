@@ -18,6 +18,31 @@ type todo_mariadb struct {
 	db *sql.DB
 }
 
+func (t *todo_mariadb) AddRecurrencePattern(pattern RecurrencePattern) (int64, error) {
+	stmt, err := t.db.Prepare("INSERT INTO recurrence_patterns (todo_id, frequency, interval, until, count) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+	
+	res, err := stmt.Exec(pattern.TodoID, pattern.Frequency, pattern.Interval, pattern.Until, pattern.Count)
+	if err != nil {
+		return 0, err
+	}
+	
+	return res.LastInsertId()
+}
+
+func (t *todo_mariadb) GetRecurrencePatternByID(id int64) (RecurrencePattern, error) {
+	var pattern RecurrencePattern
+	err := t.db.QueryRow("SELECT id, todo_id, frequency, interval, until, count FROM recurrence_patterns WHERE id = ?", id).Scan(
+		&pattern.ID, &pattern.TodoID, &pattern.Frequency, &pattern.Interval, &pattern.Until, &pattern.Count)
+	if err != nil {
+		return RecurrencePattern{}, err
+	}
+	return pattern, nil
+}
+
 func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, error) {
 	if title == "" {
 		return TodoItem{}, fmt.Errorf("title cannot be empty")
@@ -26,7 +51,7 @@ func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, erro
 	// Use current timestamp for created_date
 	createdDate := time.Now()
 	
-	stmt, err := t.db.Prepare("INSERT INTO todos (title, completed_at, due_date, created_date) VALUES (?, NULL, ?, ?)")
+	stmt, err := t.db.Prepare("INSERT INTO todos (title, completed_at, due_date, created_date, reference_id) VALUES (?, NULL, ?, ?, NULL)")
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -49,6 +74,7 @@ func (t *todo_mariadb) AddTodo(title string, dueDate *time.Time) (TodoItem, erro
 		CompletedAt: nil,
 		DueDate:     dueDate,
 		CreatedDate: createdDate,
+		ReferenceID: nil,
 	}
 	return newItem, nil
 }
@@ -115,7 +141,7 @@ func (t *todo_mariadb) UnCompleteTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) GetAllTodos() []TodoItem {
-	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date FROM todos")
+	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -129,7 +155,7 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate, &item.ReferenceID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -140,14 +166,14 @@ func (t *todo_mariadb) GetAllTodos() []TodoItem {
 
 func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 	var item TodoItem
-	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date FROM todos WHERE id = ?")
+	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos WHERE id = ?")
 	if err != nil {
 		return TodoItem{}, err
 	}
 	defer stmt.Close()
 	
 	err = stmt.QueryRow(id).Scan(
-		&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate)
+		&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate, &item.ReferenceID)
 	if err != nil {
 		return TodoItem{}, err
 	}
@@ -155,7 +181,7 @@ func (t *todo_mariadb) GetTodo(id string) (TodoItem, error) {
 }
 
 func (t *todo_mariadb) GetActiveTodos() []TodoItem {
-	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date FROM todos WHERE completed_at IS NULL")
+	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos WHERE completed_at IS NULL")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,7 +195,7 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate, &item.ReferenceID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -179,7 +205,7 @@ func (t *todo_mariadb) GetActiveTodos() []TodoItem {
 }
 
 func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
-	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date FROM todos WHERE completed_at IS NOT NULL")
+	stmt, err := t.db.Prepare("SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos WHERE completed_at IS NOT NULL")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -193,7 +219,7 @@ func (t *todo_mariadb) GetCompletedTodos() []TodoItem {
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate, &item.ReferenceID)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -231,9 +257,9 @@ func (t *todo_mariadb) DeleteTodo(id string) (TodoItem, error) {
 func (t *todo_mariadb) TitleSearchTodo(query string, activeOnly bool) []TodoItem {
 	var queryStr string
 	if activeOnly {
-		queryStr = "SELECT id, title, completed_at, due_date, created_date FROM todos WHERE title LIKE ? AND completed_at IS NULL"
+		queryStr = "SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos WHERE title LIKE ? AND completed_at IS NULL"
 	} else {
-		queryStr = "SELECT id, title, completed_at, due_date, created_date FROM todos WHERE title LIKE ?"
+		queryStr = "SELECT id, title, completed_at, due_date, created_date, reference_id FROM todos WHERE title LIKE ?"
 	}
 
 	stmt, err := t.db.Prepare(queryStr)
@@ -250,7 +276,7 @@ func (t *todo_mariadb) TitleSearchTodo(query string, activeOnly bool) []TodoItem
 	var items []TodoItem
 	for rows.Next() {
 		var item TodoItem
-		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate)
+		err = rows.Scan(&item.ID, &item.Title, &item.CompletedAt, &item.DueDate, &item.CreatedDate, &item.ReferenceID)
 		if err != nil {
 			log.Fatal(err)
 		}

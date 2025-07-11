@@ -22,10 +22,26 @@ func TestMain(m *testing.M) {
 	}
 	mariadbTestDB = db
 
+	// Create recurrence_patterns table for tests
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS recurrence_patterns (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		todo_id VARCHAR(255) NOT NULL,
+		frequency VARCHAR(50) NOT NULL,
+		interval INT NOT NULL,
+		until DATETIME,
+		count INT
+	)`)
+	if err != nil {
+		fmt.Printf("Failed to create recurrence_patterns table: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Run tests
 	code := m.Run()
 
 	// Cleanup
+	db.Exec("DELETE FROM recurrence_patterns")
+	db.Exec("DELETE FROM todos")
 	db.Close()
 	os.Exit(code)
 }
@@ -326,5 +342,57 @@ func TestMariaDB_TitleSearch(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+func TestMariaDB_RecurrencePattern(t *testing.T) {
+	svc := NewTodoMariaDB(mariadbTestDB)
+
+	// Add a test todo
+	todo, err := svc.AddTodo("Recurring todo", nil)
+	if err != nil {
+		t.Fatalf("AddTodo failed: %v", err)
+	}
+
+	// Create recurrence pattern
+	until := time.Now().AddDate(0, 1, 0) // 1 month from now
+	count := 5
+	pattern := todo.RecurrencePattern{
+		TodoID:    todo.ID,
+		Frequency: "weekly",
+		Interval:  1,
+		Until:     &until,
+		Count:     &count,
+	}
+
+	// Add recurrence pattern
+	patternID, err := svc.AddRecurrencePattern(pattern)
+	if err != nil {
+		t.Fatalf("AddRecurrencePattern failed: %v", err)
+	}
+	if patternID <= 0 {
+		t.Error("Invalid pattern ID returned")
+	}
+
+	// Retrieve recurrence pattern
+	retrieved, err := svc.GetRecurrencePatternByID(patternID)
+	if err != nil {
+		t.Fatalf("GetRecurrencePatternByID failed: %v", err)
+	}
+
+	// Verify fields
+	if retrieved.TodoID != todo.ID {
+		t.Errorf("Expected TodoID %s, got %s", todo.ID, retrieved.TodoID)
+	}
+	if retrieved.Frequency != "weekly" {
+		t.Errorf("Expected Frequency 'weekly', got '%s'", retrieved.Frequency)
+	}
+	if retrieved.Interval != 1 {
+		t.Errorf("Expected Interval 1, got %d", retrieved.Interval)
+	}
+	if retrieved.Until == nil || !retrieved.Until.Equal(until) {
+		t.Error("Until date mismatch")
+	}
+	if retrieved.Count == nil || *retrieved.Count != count {
+		t.Error("Count mismatch")
 	}
 }
