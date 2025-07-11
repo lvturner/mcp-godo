@@ -22,6 +22,79 @@ func NewHandler(todoService todo.TodoService) *Handler {
 	return &Handler{todoService: todoService}
 }
 
+func (h *Handler) AddRecurrencePatternHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	todoID, ok := request.GetArguments()["todo_id"].(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid todo_id")
+	}
+	frequency, ok := request.GetArguments()["frequency"].(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid frequency")
+	}
+	interval, ok := request.GetArguments()["interval"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("invalid interval")
+	}
+	untilRaw, ok := request.GetArguments()["until"]
+	var until *time.Time
+	if ok {
+		untilStr, ok := untilRaw.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid until")
+		}
+		untilTime, err := time.Parse(time.RFC3339, untilStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse until: %w", err)
+		}
+		until = &untilTime
+	}
+	countRaw, ok := request.GetArguments()["count"]
+	var count *int
+	if ok {
+		countVal, ok := countRaw.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid count")
+		}
+		countInt := int(countVal)
+		count = &countInt
+	}
+
+	pattern := todo.RecurrencePattern{
+		TodoID:    todoID,
+		Frequency: frequency,
+		Interval:  int(interval),
+		Until:     until,
+		Count:     count,
+	}
+
+	patternID, err := h.todoService.AddRecurrencePattern(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add recurrence pattern: %w", err)
+	}
+	return mcp.NewToolResultText(fmt.Sprintf("Recurrence pattern added with ID: %d", patternID)), nil
+}
+
+func (h *Handler) GetRecurrencePatternHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	idRaw, ok := request.GetArguments()["id"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("invalid id")
+	}
+	id := int64(idRaw)
+	pattern, err := h.todoService.GetRecurrencePatternByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recurrence pattern: %w", err)
+	}
+	resultText := fmt.Sprintf("ID: %d, TodoID: %s, Frequency: %s, Interval: %d", 
+		pattern.ID, pattern.TodoID, pattern.Frequency, pattern.Interval)
+	if pattern.Until != nil {
+		resultText += fmt.Sprintf(", Until: %s", pattern.Until.Format(time.RFC3339))
+	}
+	if pattern.Count != nil {
+		resultText += fmt.Sprintf(", Count: %d", *pattern.Count)
+	}
+	return mcp.NewToolResultText(resultText), nil
+}
+
 func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	query, ok := request.GetArguments()["query"].(string)
 	if !ok {
@@ -35,8 +108,12 @@ func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRe
 		if todo.DueDate != nil {
 			dueDateStr = todo.DueDate.Format(time.RFC3339)
 		}
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, CompletedAt: %s, Due Date: %s", 
-			todo.ID, todo.Title, todo.CompletedAt, dueDateStr))
+		referenceID := ""
+		if todo.ReferenceID != nil {
+			referenceID = fmt.Sprintf("ReferenceID: %d", *todo.ReferenceID)
+		}
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, CompletedAt: %s, Due Date: %s, %s", 
+			todo.ID, todo.Title, todo.CompletedAt, dueDateStr, referenceID))
 	}
 
 	if len(results) > 0 {
@@ -86,7 +163,12 @@ func (h *Handler) GetCompletedTodosHandler(ctx context.Context, request mcp.Call
 	var resultText string
 	for _, todo := range todos {
 		status := "Completed"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
+		referenceID := ""
+		if todo.ReferenceID != nil {
+			referenceID = fmt.Sprintf(", ReferenceID: %d", *todo.ReferenceID)
+		}
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s\n", 
+			todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID)
 	}
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -99,7 +181,12 @@ func (h *Handler) GetActiveTodosHandler(ctx context.Context, request mcp.CallToo
 	var resultText string
 	for _, todo := range todos {
 		status := "Incomplete"
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
+		referenceID := ""
+		if todo.ReferenceID != nil {
+			referenceID = fmt.Sprintf(", ReferenceID: %d", *todo.ReferenceID)
+		}
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s\n", 
+			todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID)
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Today's date is %s, and the list of todo items is: %s", time.Now().Format("2006-01-02"), resultText)), nil
 }
@@ -131,8 +218,13 @@ func (h *Handler) GetTodoHandler(ctx context.Context, request mcp.CallToolReques
 	if todo.CompletedAt != nil {
 		status = "Complete"
 	}
+	referenceID := ""
+	if todo.ReferenceID != nil {
+		referenceID = fmt.Sprintf(", ReferenceID: %d", *todo.ReferenceID)
+	}
 
-	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate)
+	resultText := fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s\n", 
+		todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID)
 	
 	return mcp.NewToolResultText(resultText), nil
 }
@@ -145,7 +237,12 @@ func (h *Handler) ListTodosHandler(ctx context.Context, request mcp.CallToolRequ
 		if todo.CompletedAt != nil {
 			status = "Complete"
 		}
-		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate))
+		referenceID := ""
+		if todo.ReferenceID != nil {
+			referenceID = fmt.Sprintf(", ReferenceID: %d", *todo.ReferenceID)
+		}
+		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s\n", 
+			todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID))
 	}
 	return mcp.NewToolResultText(strings.Join(todosText, "\n")), nil
 }

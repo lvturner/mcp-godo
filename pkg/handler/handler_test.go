@@ -23,6 +23,206 @@ type mockTodoService struct {
 	setDueDateFunc        func(id string, dueDate time.Time) (todo.TodoItem, error)
 	deleteTodoFunc        func(id string) (todo.TodoItem, error)
 	titleSearchTodoFunc   func(query string, activeOnly bool) []todo.TodoItem
+	addRecurrencePatternFunc    func(pattern todo.RecurrencePattern) (int64, error)
+	getRecurrencePatternByIDFunc func(id int64) (todo.RecurrencePattern, error)
+}
+
+func TestAddRecurrencePatternHandler(t *testing.T) {
+	now := time.Now().UTC()
+	tests := []struct {
+		name          string
+		args         map[string]interface{}
+		mockFunc     func(pattern todo.RecurrencePattern) (int64, error)
+		expectedText string
+		expectError  bool
+	}{
+		{
+			name: "success with until and count",
+			args: map[string]interface{}{
+				"todo_id":   "123",
+				"frequency": "weekly",
+				"interval":  1.0,
+				"until":     now.Format(time.RFC3339),
+				"count":     5.0,
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				if pattern.TodoID != "123" || pattern.Frequency != "weekly" || pattern.Interval != 1 || pattern.Until == nil || pattern.Count == nil || *pattern.Count != 5 {
+					return 0, fmt.Errorf("unexpected pattern")
+				}
+				return 1, nil
+			},
+			expectedText: "Recurrence pattern added with ID: 1",
+			expectError: false,
+		},
+		{
+			name: "success without until and count",
+			args: map[string]interface{}{
+				"todo_id":   "123",
+				"frequency": "daily",
+				"interval":  2.0,
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				if pattern.TodoID != "123" || pattern.Frequency != "daily" || pattern.Interval != 2 || pattern.Until != nil || pattern.Count != nil {
+					return 0, fmt.Errorf("unexpected pattern")
+				}
+				return 2, nil
+			},
+			expectedText: "Recurrence pattern added with ID: 2",
+			expectError: false,
+		},
+		{
+			name: "invalid todo_id",
+			args: map[string]interface{}{
+				"frequency": "weekly",
+				"interval":  1.0,
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				return 0, nil
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid frequency",
+			args: map[string]interface{}{
+				"todo_id":   "123",
+				"interval":  1.0,
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				return 0, nil
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid interval",
+			args: map[string]interface{}{
+				"todo_id":   "123",
+				"frequency": "weekly",
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				return 0, nil
+			},
+			expectError: true,
+		},
+		{
+			name: "service error",
+			args: map[string]interface{}{
+				"todo_id":   "123",
+				"frequency": "weekly",
+				"interval":  1.0,
+			},
+			mockFunc: func(pattern todo.RecurrencePattern) (int64, error) {
+				return 0, fmt.Errorf("service error")
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockTodoService{
+				addRecurrencePatternFunc: tt.mockFunc,
+			}
+			h := NewHandler(mockSvc)
+			
+			req := mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Arguments: tt.args,
+				},
+			}
+
+			result, err := h.AddRecurrencePatternHandler(nil, req)
+			
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
+			}
+		})
+	}
+}
+
+func TestGetRecurrencePatternHandler(t *testing.T) {
+	now := time.Now().UTC()
+	tests := []struct {
+		name          string
+		args         map[string]interface{}
+		mockFunc     func(id int64) (todo.RecurrencePattern, error)
+		expectedText string
+		expectError  bool
+	}{
+		{
+			name: "success with until and count",
+			args: map[string]interface{}{"id": 1.0},
+			mockFunc: func(id int64) (todo.RecurrencePattern, error) {
+				count := 5
+				return todo.RecurrencePattern{
+					ID:        1,
+					TodoID:    "123",
+					Frequency: "weekly",
+					Interval:  1,
+					Until:     &now,
+					Count:     &count,
+				}, nil
+			},
+			expectedText: fmt.Sprintf("ID: 1, TodoID: 123, Frequency: weekly, Interval: 1, Until: %s, Count: 5", now.Format(time.RFC3339)),
+			expectError: false,
+		},
+		{
+			name: "success without until and count",
+			args: map[string]interface{}{"id": 2.0},
+			mockFunc: func(id int64) (todo.RecurrencePattern, error) {
+				return todo.RecurrencePattern{
+					ID:        2,
+					TodoID:    "456",
+					Frequency: "daily",
+					Interval:  2,
+				}, nil
+			},
+			expectedText: "ID: 2, TodoID: 456, Frequency: daily, Interval: 2",
+			expectError: false,
+		},
+		{
+			name: "invalid id",
+			args: map[string]interface{}{},
+			mockFunc: func(id int64) (todo.RecurrencePattern, error) {
+				return todo.RecurrencePattern{}, nil
+			},
+			expectError: true,
+		},
+		{
+			name: "service error",
+			args: map[string]interface{}{"id": 3.0},
+			mockFunc: func(id int64) (todo.RecurrencePattern, error) {
+				return todo.RecurrencePattern{}, fmt.Errorf("service error")
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := &mockTodoService{
+				getRecurrencePatternByIDFunc: tt.mockFunc,
+			}
+			h := NewHandler(mockSvc)
+			
+			req := mcp.CallToolRequest{
+				Params: mcp.CallToolParams{
+					Arguments: tt.args,
+				},
+			}
+
+			result, err := h.GetRecurrencePatternHandler(nil, req)
+			
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedText, result.Content[0].(mcp.TextContent).Text)
+			}
+		})
+	}
 }
 
 func (m *mockTodoService) AddTodo(title string, dueDate *time.Time) (todo.TodoItem, error) {
@@ -63,6 +263,14 @@ func (m *mockTodoService) DeleteTodo(id string) (todo.TodoItem, error) {
 
 func (m *mockTodoService) TitleSearchTodo(query string, activeOnly bool) []todo.TodoItem {
 	return m.titleSearchTodoFunc(query, activeOnly)
+}
+
+func (m *mockTodoService) AddRecurrencePattern(pattern todo.RecurrencePattern) (int64, error) {
+	return m.addRecurrencePatternFunc(pattern)
+}
+
+func (m *mockTodoService) GetRecurrencePatternByID(id int64) (todo.RecurrencePattern, error) {
+	return m.getRecurrencePatternByIDFunc(id)
 }
 
 func (m *mockTodoService) Close() error {
