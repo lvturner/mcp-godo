@@ -356,7 +356,7 @@ func TestMariaDB_RecurrencePattern(t *testing.T) {
 	// Create recurrence pattern
 	until := time.Now().AddDate(0, 1, 0) // 1 month from now
 	count := 5
-	pattern := todo.RecurrencePattern{
+	pattern := RecurrencePattern{
 		TodoID:    todo.ID,
 		Frequency: "weekly",
 		Interval:  1,
