@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -203,8 +204,8 @@ func TestListTodosHandler(t *testing.T) {
 			name: "success with todos",
 			mockFunc: func() []todo.TodoItem {
 				return []todo.TodoItem{
-					{ID: "1", Title: "test1", Completed: false, CreatedDate: now},
-					{ID: "2", Title: "test2", Completed: true, CreatedDate: now},
+					{ID: "1", Title: "test1", CompletedAt: nil, CreatedDate: now},
+					{ID: "2", Title: "test2", CompletedAt: &now, CreatedDate: now},
 				}
 			},
 			expectError: false,
@@ -251,11 +252,11 @@ func TestTitleSearchHandler(t *testing.T) {
 			args: map[string]interface{}{"query": "test"},
 			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				return []todo.TodoItem{
-					{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
-					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
+					{ID: "1", Title: "test todo", CompletedAt: nil, CreatedDate: now},
+					{ID: "2", Title: "another test", CompletedAt: &now, CreatedDate: now},
 				}
 			},
-			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: \nID: 2, Title: another test, Completed: true, Due Date: ",
+			expectedText: fmt.Sprintf("ID: 1, Title: test todo, CompletedAt: <nil>, Due Date: \nID: 2, Title: another test, CompletedAt: %s, Due Date: ", now),
 			expectError: false,
 		},
 		{
@@ -264,15 +265,15 @@ func TestTitleSearchHandler(t *testing.T) {
 			mockFunc: func(query string, activeOnly bool) []todo.TodoItem {
 				if activeOnly {
 					return []todo.TodoItem{
-						{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
+						{ID: "1", Title: "test todo", CompletedAt: nil, CreatedDate: now},
 					}
 				}
 				return []todo.TodoItem{
-					{ID: "1", Title: "test todo", Completed: false, CreatedDate: now},
-					{ID: "2", Title: "another test", Completed: true, CreatedDate: now},
+					{ID: "1", Title: "test todo", CompletedAt: nil, CreatedDate: now},
+					{ID: "2", Title: "another test", CompletedAt: &now, CreatedDate: now},
 				}
 			},
-			expectedText: "ID: 1, Title: test todo, Completed: false, Due Date: ",
+			expectedText: "ID: 1, Title: test todo, CompletedAt: <nil>, Due Date: ",
 			expectError: false,
 		},
 		{
@@ -330,11 +331,3 @@ func TestTitleSearchHandler(t *testing.T) {
 		})
 	}
 }
-
-// Similar test structures can be created for other handler methods:
-// - GetTodoHandler
-// - DeleteTodoHandler  
-// - GetActiveTodosHandler
-// - GetCompletedTodosHandler
-// - UnCompleteTodoHandler
-// - UpdateDueDateHandler

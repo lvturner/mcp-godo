@@ -35,8 +35,8 @@ func (h *Handler) TitleSearchHandler(ctx context.Context, request mcp.CallToolRe
 		if todo.DueDate != nil {
 			dueDateStr = todo.DueDate.Format(time.RFC3339)
 		}
-		results = append(results, fmt.Sprintf("ID: %s, Title: %s, Completed: %t, Due Date: %s", 
-			todo.ID, todo.Title, todo.Completed, dueDateStr))
+		results = append(results, fmt.Sprintf("ID: %s, Title: %s, CompletedAt: %s, Due Date: %s", 
+			todo.ID, todo.Title, todo.CompletedAt, dueDateStr))
 	}
 
 	if len(results) > 0 {
@@ -128,7 +128,7 @@ func (h *Handler) GetTodoHandler(ctx context.Context, request mcp.CallToolReques
 		return nil, fmt.Errorf("failed to get todo: %w", err)
 	}
 	status := "Incomplete"
-	if todo.Completed {
+	if todo.CompletedAt != nil {
 		status = "Complete"
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) ListTodosHandler(ctx context.Context, request mcp.CallToolRequ
 	var todosText []string
 	for _, todo := range todos {
 		status := "Incomplete"
-		if todo.Completed {
+		if todo.CompletedAt != nil {
 			status = "Complete"
 		}
 		todosText = append(todosText, fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s\n", todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate))
