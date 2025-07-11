@@ -139,5 +139,39 @@ func addTools(s *server.MCPServer) {
 		),
 	)
 	s.AddTool(titleSearchTool, handler.TitleSearchHandler)
+
+	// Add recurrence pattern tool
+	addRecurrencePatternTool := mcp.NewTool("add_recurrence_pattern",
+		mcp.WithDescription("Add a recurrence pattern to a todo item"),
+		mcp.WithString("todo_id",
+			mcp.Required(),
+			mcp.Description("The ID of the todo item"),
+		),
+		mcp.WithString("frequency",
+			mcp.Required(),
+			mcp.Description("The frequency of the recurrence (e.g., 'daily', 'weekly', 'monthly', 'yearly')"),
+		),
+		mcp.WithInt("interval",
+			mcp.Required(),
+			mcp.Description("The interval between recurrences (e.g., 1 for every day/week/month/year)"),
+		),
+		mcp.WithString("until",
+			mcp.Description("The end date for the recurrence pattern in ISO 8601 format (optional)"),
+		),
+		mcp.WithInt("count",
+			mcp.Description("The number of times the recurrence should occur (optional)"),
+		),
+	)
+	s.AddTool(addRecurrencePatternTool, handler.AddRecurrencePatternHandler)
+
+	// Get recurrence pattern tool
+	getRecurrencePatternTool := mcp.NewTool("get_recurrence_pattern",
+		mcp.WithDescription("Retrieve a recurrence pattern by its ID"),
+		mcp.WithInt("id",
+			mcp.Required(),
+			mcp.Description("The ID of the recurrence pattern"),
+		),
+	)
+	s.AddTool(getRecurrencePatternTool, handler.GetRecurrencePatternHandler)
 }
 
