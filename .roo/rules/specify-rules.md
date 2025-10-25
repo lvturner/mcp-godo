@@ -3,6 +3,7 @@
 Auto-generated from all feature plans. Last updated: 2025-10-25
 
 ## Active Technologies
+- SQLite (primary), MariaDB (secondary support) (001-create-category-feature)
 
 - Go 1.24.2 + github.com/mark3labs/mcp-go (MCP framework), github.com/mattn/go-sqlite3 (SQLite driver), github.com/go-sql-driver/mysql (MySQL driver) (001-project-table)
 
@@ -22,6 +23,7 @@ tests/
 Go 1.24.2: Follow standard conventions
 
 ## Recent Changes
+- 001-create-category-feature: Added Go 1.24.2 + github.com/mark3labs/mcp-go (MCP framework), github.com/mattn/go-sqlite3 (SQLite driver), github.com/go-sql-driver/mysql (MySQL driver)
 
 - 001-project-table: Added Go 1.24.2 + github.com/mark3labs/mcp-go (MCP framework), github.com/mattn/go-sqlite3 (SQLite driver), github.com/go-sql-driver/mysql (MySQL driver)
 
