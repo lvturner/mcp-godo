@@ -15,11 +15,19 @@ import (
 )
 
 type Handler struct {
-	todoService todo.TodoService
+	todoService    todo.TodoService
+	projectService todo.ProjectService
 }
 
 func NewHandler(todoService todo.TodoService) *Handler {
 	return &Handler{todoService: todoService}
+}
+
+func NewHandlerWithProject(todoService todo.TodoService, projectService todo.ProjectService) *Handler {
+	return &Handler{
+		todoService:    todoService,
+		projectService: projectService,
+	}
 }
 
 func (h *Handler) AddRecurrencePatternHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -265,23 +273,45 @@ func (h *Handler) AddTodoHandler(ctx context.Context, request mcp.CallToolReques
 	if !ok {
 		return nil, errors.New("title must be a string")
 	}
+	
+	// Handle optional due_date
 	dueDateRaw, ok := request.GetArguments()["due_date"]
+	var dueDate *time.Time
 	if ok {
 		dueDateStr, ok := dueDateRaw.(string)
 		if !ok {
 			return nil, errors.New("due_date must be a string")
 		}
-		dueDate, err := time.Parse(time.RFC3339, dueDateStr)
+		parsedDueDate, err := time.Parse(time.RFC3339, dueDateStr)
 		if err != nil {
 			return nil, err
 		}
-
-		h.todoService.AddTodo(title, &dueDate)
-	} else {
-		h.todoService.AddTodo(title, nil)
+		dueDate = &parsedDueDate
 	}
 	
-	return mcp.NewToolResultText(fmt.Sprintf("%s added to todo list", title)), nil
+	// Handle optional project_id
+	projectIDRaw, ok := request.GetArguments()["project_id"]
+	if ok {
+		projectIDFloat, ok := projectIDRaw.(float64)
+		if !ok {
+			return nil, errors.New("project_id must be a number")
+		}
+		projectID := int64(projectIDFloat)
+		
+		// Add todo to project
+		_, err := h.todoService.AddTodoToProject(title, projectID, dueDate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add todo to project: %w", err)
+		}
+		return mcp.NewToolResultText(fmt.Sprintf("%s added to project todo list", title)), nil
+	} else {
+		// Add regular todo
+		_, err := h.todoService.AddTodo(title, dueDate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add todo: %w", err)
+		}
+		return mcp.NewToolResultText(fmt.Sprintf("%s added to todo list", title)), nil
+	}
 }
 
 func (h *Handler) ListTodosResourceHandler(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {

@@ -20,13 +20,16 @@ type TodoItem struct {
 	DueDate     *time.Time `json:"due_date"`
 	CreatedDate time.Time  `json:"created_date"`
 	ReferenceID *int64     `json:"reference_id"` // pointer to handle NULL in database
+	ProjectID   *int64     `json:"project_id"`   // pointer to handle NULL in database (optional project association)
 }
 
 type TodoService interface {
 	AddTodo(title string, dueDate *time.Time) (TodoItem, error)
+	AddTodoToProject(title string, projectID int64, dueDate *time.Time) (TodoItem, error)
 	GetAllTodos() []TodoItem
 	GetActiveTodos() []TodoItem
 	GetCompletedTodos() []TodoItem
+	GetTodosByProject(projectID int64) []TodoItem
 	GetTodo(id string) (TodoItem, error)
 	CompleteTodo(id string) (TodoItem, error)
 	UnCompleteTodo(id string) (TodoItem, error)

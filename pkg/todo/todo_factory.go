@@ -3,8 +3,6 @@ package todo
 import (
 	"database/sql"
 	"errors"
-
-
 )
 
 var ErrUnknownStorageType = errors.New("unknown storage type")
@@ -24,6 +22,20 @@ func NewTodoServiceFromConfig(cfg Config) (TodoService, error) {
 			return nil, err
 		}
 		return NewTodoMariaDB(db), nil
+	default:
+		return nil, ErrUnknownStorageType
+	}
+}
+
+func NewProjectServiceFromConfig(cfg Config) (ProjectService, error) {
+	switch cfg.StorageType {
+
+	case "mariadb":
+		db, err := sql.Open("mysql", cfg.SQLDBPath)
+		if err != nil {
+			return nil, err
+		}
+		return NewProjectMariaDB(db), nil
 	default:
 		return nil, ErrUnknownStorageType
 	}
