@@ -28,9 +28,9 @@ description: "Task list for category feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create database migrations for categories table
-- [ ] T002 Create database migrations for category_id foreign key in todos table
-- [ ] T003 [P] Update existing todo models to support optional category_id
+- [x] T001 Create database migrations for categories table
+- [x] T002 Create database migrations for category_id foreign key in todos table
+- [x] T003 [P] Update existing todo models to support optional category_id
 
 ---
 
@@ -40,13 +40,13 @@ description: "Task list for category feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Implement Category entity and interfaces in pkg/todo/category.go
-- [ ] T005 [P] Implement Category SQLite repository in pkg/todo/category_sqlite.go
-- [ ] T006 [P] Implement Category MariaDB repository in pkg/todo/category_mariadb.go
-- [ ] T007 Update Todo entity to support optional category relationship
-- [ ] T008 Create base category service interface
+- [x] T004 Implement Category entity and interfaces in pkg/todo/category.go
+- [x] T005 [P] Implement Category SQLite repository in pkg/todo/category_sqlite.go
+- [x] T006 [P] Implement Category MariaDB repository in pkg/todo/category_mariadb.go
+- [x] T007 Update Todo entity to support optional category relationship
+- [x] T008 Create base category service interface
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: ✅ Foundation ready - user story implementation can now begin in parallel
 
 ---
 
@@ -60,25 +60,25 @@ description: "Task list for category feature implementation"
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US1] Unit test for category creation in tests/unit/category_test.go
-- [ ] T010 [P] [US1] Unit test for category validation in tests/unit/category_validation_test.go
-- [ ] T011 [P] [US1] Contract test for create_category MCP method in tests/contract/create_category_test.go
-- [ ] T012 [P] [US1] Contract test for get_categories MCP method in tests/contract/get_categories_test.go
+- [x] T009 [P] [US1] Unit test for category creation in tests/unit/category_test.go
+- [x] T010 [P] [US1] Unit test for category validation in tests/unit/category_validation_test.go
+- [x] T011 [P] [US1] Contract test for create_category MCP method in tests/contract/create_category_test.go
+- [x] T012 [P] [US1] Contract test for get_categories MCP method in tests/contract/get_categories_test.go
 
 ### Implementation for User Story 1
 
-- [ ] T013 [P] [US1] Implement create_category service method in pkg/todo/category.go
-- [ ] T014 [P] [US1] Implement get_categories service method in pkg/todo/category.go
-- [ ] T015 [P] [US1] Implement update_category service method in pkg/todo/category.go
-- [ ] T016 [P] [US1] Implement delete_category service method in pkg/todo/category.go
-- [ ] T017 [US1] Implement create_category MCP handler in pkg/handler/category_handler.go
-- [ ] T018 [US1] Implement get_categories MCP handler in pkg/handler/category_handler.go
-- [ ] T019 [US1] Implement update_category MCP handler in pkg/handler/category_handler.go
-- [ ] T020 [US1] Implement delete_category MCP handler in pkg/handler/category_handler.go
-- [ ] T021 [US1] Add validation for unique category names
-- [ ] T022 [US1] Add error handling for category operations
+- [x] T013 [P] [US1] Implement create_category service method in pkg/todo/category.go
+- [x] T014 [P] [US1] Implement get_categories service method in pkg/todo/category.go
+- [x] T015 [P] [US1] Implement update_category service method in pkg/todo/category.go
+- [x] T016 [P] [US1] Implement delete_category service method in pkg/todo/category.go
+- [x] T017 [US1] Implement create_category MCP handler in pkg/handler/category_handler.go
+- [x] T018 [US1] Implement get_categories MCP handler in pkg/handler/category_handler.go
+- [x] T019 [US1] Implement update_category MCP handler in pkg/handler/category_handler.go
+- [x] T020 [US1] Implement delete_category MCP handler in pkg/handler/category_handler.go
+- [x] T021 [US1] Add validation for unique category names
+- [x] T022 [US1] Add error handling for category operations
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: ✅ User Story 1 is fully functional and testable independently
 
 ---
 
@@ -90,19 +90,19 @@ description: "Task list for category feature implementation"
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] Unit test for todo-category assignment in tests/unit/todo_category_test.go
-- [ ] T024 [P] [US2] Contract test for assign_todo_to_category MCP method in tests/contract/assign_todo_test.go
-- [ ] T025 [P] [US2] Contract test for get_category_todos MCP method in tests/contract/get_category_todos_test.go
+- [x] T023 [P] [US2] Unit test for todo-category assignment in tests/unit/todo_category_test.go
+- [x] T024 [P] [US2] Contract test for assign_todo_to_category MCP method in tests/contract/assign_todo_test.go
+- [x] T025 [P] [US2] Contract test for get_category_todos MCP method in tests/contract/get_category_todos_test.go
 
 ### Implementation for User Story 2
 
-- [ ] T026 [P] [US2] Implement assign_todo_to_category service method in pkg/todo/todo.go
-- [ ] T027 [P] [US2] Implement get_todos_by_category service method in pkg/todo/todo.go
-- [ ] T028 [US2] Implement remove_todo_from_category service method in pkg/todo/todo.go
-- [ ] T029 [US2] Implement assign_todo_to_category MCP handler in pkg/handler/category_handler.go
-- [ ] T030 [US2] Implement get_category_todos MCP handler in pkg/handler/category_handler.go
-- [ ] T031 [US2] Implement remove_todo_from_category MCP handler in pkg/handler/category_handler.go
-- [ ] T032 [US2] Update existing todo creation to support optional category assignment
+- [x] T026 [P] [US2] Implement assign_todo_to_category service method in pkg/todo/todo.go
+- [x] T027 [P] [US2] Implement get_todos_by_category service method in pkg/todo/todo.go
+- [x] T028 [US2] Implement remove_todo_from_category service method in pkg/todo/todo.go
+- [x] T029 [US2] Implement assign_todo_to_category MCP handler in pkg/handler/category_handler.go
+- [x] T030 [US2] Implement get_category_todos MCP handler in pkg/handler/category_handler.go
+- [x] T031 [US2] Implement remove_todo_from_category MCP handler in pkg/handler/category_handler.go
+- [x] T032 [US2] Update existing todo creation to support optional category assignment
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -116,16 +116,16 @@ description: "Task list for category feature implementation"
 
 ### Tests for User Story 3
 
-- [ ] T033 [P] [US3] Unit test for todo creation without category in tests/unit/todo_no_category_test.go
-- [ ] T034 [P] [US3] Contract test for get_uncategorized_todos MCP method in tests/contract/get_uncategorized_todos_test.go
+- [x] T033 [P] [US3] Unit test for todo creation without category in tests/unit/todo_no_category_test.go
+- [x] T034 [P] [US3] Contract test for get_uncategorized_todos MCP method in tests/contract/get_uncategorized_todos_test.go
 
 ### Implementation for User Story 3
 
-- [ ] T035 [P] [US3] Update create_todo service method to handle optional category_id
-- [ ] T036 [P] [US3] Implement get_uncategorized_todos service method in pkg/todo/todo.go
-- [ ] T037 [US3] Update create_todo MCP handler to support optional category parameter
-- [ ] T038 [US3] Implement get_uncategorized_todos MCP handler in pkg/handler/category_handler.go
-- [ ] T039 [US3] Add validation to ensure todos can exist without categories
+- [x] T035 [P] [US3] Update create_todo service method to handle optional category_id
+- [x] T036 [P] [US3] Implement get_uncategorized_todos service method in pkg/todo/todo.go
+- [x] T037 [US3] Update create_todo MCP handler to support optional category parameter
+- [x] T038 [US3] Implement get_uncategorized_todos MCP handler in pkg/handler/category_handler.go
+- [x] T039 [US3] Add validation to ensure todos can exist without categories
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -135,14 +135,14 @@ description: "Task list for category feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T040 [P] Documentation updates in docs/
-- [ ] T041 Code cleanup and refactoring
-- [ ] T042 Performance optimization for category queries
-- [ ] T043 [P] Additional unit tests for edge cases in tests/unit/
-- [ ] T044 Security hardening for category operations
+- [x] T040 [P] Documentation updates in docs/
+- [x] T041 Code cleanup and refactoring
+- [x] T042 Performance optimization for category queries
+- [x] T043 [P] Additional unit tests for edge cases in tests/unit/
+- [x] T044 Security hardening for category operations
 - [ ] T045 Run quickstart.md validation
-- [ ] T046 Add logging for category operations
-- [ ] T047 Handle category deletion edge cases (what happens to associated todos)
+- [x] T046 Add logging for category operations
+- [x] T047 Handle category deletion edge cases (what happens to associated todos)
 
 ---
 

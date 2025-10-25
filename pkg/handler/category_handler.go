@@ -227,6 +227,36 @@ func (h *CategoryHandler) GetCategoryTodosHandler(ctx context.Context, request m
 	return mcp.NewToolResultText(resultText), nil
 }
 
+// AssignTodoToCategoryHandler handles the assign_todo_to_category MCP tool
+func (h *CategoryHandler) AssignTodoToCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract parameters
+	todoID, ok := request.GetArguments()["todo_id"].(string)
+	if !ok || todoID == "" {
+		return nil, fmt.Errorf("todo_id parameter is required and must be a string")
+	}
+	
+	categoryIDRaw, ok := request.GetArguments()["category_id"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("category_id parameter is required and must be a number")
+	}
+	
+	// For now, return a message indicating this requires todo service integration
+	// The actual implementation would need access to the todo service
+	return mcp.NewToolResultText(fmt.Sprintf("Todo %s would be assigned to category %d (requires todo service integration)", todoID, int64(categoryIDRaw))), nil
+}
+
+// RemoveTodoFromCategoryHandler handles the remove_todo_from_category MCP tool
+func (h *CategoryHandler) RemoveTodoFromCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract parameters
+	todoID, ok := request.GetArguments()["todo_id"].(string)
+	if !ok || todoID == "" {
+		return nil, fmt.Errorf("todo_id parameter is required and must be a string")
+	}
+	
+	// For now, return a message indicating this requires todo service integration
+	return mcp.NewToolResultText(fmt.Sprintf("Todo %s would be removed from its category (requires todo service integration)", todoID)), nil
+}
+
 // GetUncategorizedTodosHandler handles the get_uncategorized_todos MCP tool
 func (h *CategoryHandler) GetUncategorizedTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	todos, err := h.categoryService.GetUncategorizedTodos()

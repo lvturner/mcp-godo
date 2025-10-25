@@ -25,6 +25,13 @@ type mockTodoService struct {
 	titleSearchTodoFunc   func(query string, activeOnly bool) []todo.TodoItem
 	addRecurrencePatternFunc    func(pattern todo.RecurrencePattern) (int64, error)
 	getRecurrencePatternByIDFunc func(id int64) (todo.RecurrencePattern, error)
+	addTodoToProjectFunc  func(title string, projectID int64, dueDate *time.Time) (todo.TodoItem, error)
+	addTodoToCategoryFunc func(title string, categoryID int64, dueDate *time.Time) (todo.TodoItem, error)
+	getTodosByProjectFunc func(projectID int64) []todo.TodoItem
+	getTodosByCategoryFunc func(categoryID int64) []todo.TodoItem
+	getUncategorizedTodosFunc func() []todo.TodoItem
+	assignTodoToCategoryFunc func(todoID string, categoryID int64) (todo.TodoItem, error)
+	removeTodoFromCategoryFunc func(todoID string) (todo.TodoItem, error)
 }
 
 func TestAddRecurrencePatternHandler(t *testing.T) {
@@ -271,6 +278,55 @@ func (m *mockTodoService) AddRecurrencePattern(pattern todo.RecurrencePattern) (
 
 func (m *mockTodoService) GetRecurrencePatternByID(id int64) (todo.RecurrencePattern, error) {
 	return m.getRecurrencePatternByIDFunc(id)
+}
+
+func (m *mockTodoService) AddTodoToProject(title string, projectID int64, dueDate *time.Time) (todo.TodoItem, error) {
+	if m.addTodoToProjectFunc != nil {
+		return m.addTodoToProjectFunc(title, projectID, dueDate)
+	}
+	return todo.TodoItem{}, nil
+}
+
+func (m *mockTodoService) AddTodoToCategory(title string, categoryID int64, dueDate *time.Time) (todo.TodoItem, error) {
+	if m.addTodoToCategoryFunc != nil {
+		return m.addTodoToCategoryFunc(title, categoryID, dueDate)
+	}
+	return todo.TodoItem{}, nil
+}
+
+func (m *mockTodoService) GetTodosByProject(projectID int64) []todo.TodoItem {
+	if m.getTodosByProjectFunc != nil {
+		return m.getTodosByProjectFunc(projectID)
+	}
+	return []todo.TodoItem{}
+}
+
+func (m *mockTodoService) GetTodosByCategory(categoryID int64) []todo.TodoItem {
+	if m.getTodosByCategoryFunc != nil {
+		return m.getTodosByCategoryFunc(categoryID)
+	}
+	return []todo.TodoItem{}
+}
+
+func (m *mockTodoService) GetUncategorizedTodos() []todo.TodoItem {
+	if m.getUncategorizedTodosFunc != nil {
+		return m.getUncategorizedTodosFunc()
+	}
+	return []todo.TodoItem{}
+}
+
+func (m *mockTodoService) AssignTodoToCategory(todoID string, categoryID int64) (todo.TodoItem, error) {
+	if m.assignTodoToCategoryFunc != nil {
+		return m.assignTodoToCategoryFunc(todoID, categoryID)
+	}
+	return todo.TodoItem{}, nil
+}
+
+func (m *mockTodoService) RemoveTodoFromCategory(todoID string) (todo.TodoItem, error) {
+	if m.removeTodoFromCategoryFunc != nil {
+		return m.removeTodoFromCategoryFunc(todoID)
+	}
+	return todo.TodoItem{}, nil
 }
 
 func (m *mockTodoService) Close() error {
