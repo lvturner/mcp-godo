@@ -394,7 +394,7 @@ func (h *Handler) CreateCategoryHandler(ctx context.Context, request mcp.CallToo
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.CreateCategoryHandler(ctx, request)
 }
 
@@ -402,7 +402,7 @@ func (h *Handler) GetAllCategoriesHandler(ctx context.Context, request mcp.CallT
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.GetAllCategoriesHandler(ctx, request)
 }
 
@@ -410,7 +410,7 @@ func (h *Handler) GetCategoryHandler(ctx context.Context, request mcp.CallToolRe
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.GetCategoryHandler(ctx, request)
 }
 
@@ -418,7 +418,7 @@ func (h *Handler) UpdateCategoryHandler(ctx context.Context, request mcp.CallToo
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.UpdateCategoryHandler(ctx, request)
 }
 
@@ -426,7 +426,7 @@ func (h *Handler) DeleteCategoryHandler(ctx context.Context, request mcp.CallToo
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.DeleteCategoryHandler(ctx, request)
 }
 
@@ -434,7 +434,7 @@ func (h *Handler) GetCategoryTodosHandler(ctx context.Context, request mcp.CallT
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.GetCategoryTodosHandler(ctx, request)
 }
 
@@ -442,7 +442,7 @@ func (h *Handler) GetUncategorizedTodosHandler(ctx context.Context, request mcp.
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.GetUncategorizedTodosHandler(ctx, request)
 }
 
@@ -450,7 +450,7 @@ func (h *Handler) AssignTodoToCategoryHandler(ctx context.Context, request mcp.C
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.AssignTodoToCategoryHandler(ctx, request)
 }
 
@@ -458,6 +458,6 @@ func (h *Handler) RemoveTodoFromCategoryHandler(ctx context.Context, request mcp
 	if h.categoryService == nil {
 		return nil, fmt.Errorf("category service not initialized")
 	}
-	categoryHandler := NewCategoryHandler(h.categoryService)
+	categoryHandler := NewCategoryHandler(h.categoryService, h.todoService)
 	return categoryHandler.RemoveTodoFromCategoryHandler(ctx, request)
 }

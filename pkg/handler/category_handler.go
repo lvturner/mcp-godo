@@ -12,12 +12,14 @@ import (
 // CategoryHandler handles MCP tools for category operations
 type CategoryHandler struct {
 	categoryService todo.CategoryService
+	todoService     todo.TodoService
 }
 
 // NewCategoryHandler creates a new category handler
-func NewCategoryHandler(categoryService todo.CategoryService) *CategoryHandler {
+func NewCategoryHandler(categoryService todo.CategoryService, todoService todo.TodoService) *CategoryHandler {
 	return &CategoryHandler{
 		categoryService: categoryService,
+		todoService:     todoService,
 	}
 }
 
@@ -240,9 +242,15 @@ func (h *CategoryHandler) AssignTodoToCategoryHandler(ctx context.Context, reque
 		return nil, fmt.Errorf("category_id parameter is required and must be a number")
 	}
 	
-	// For now, return a message indicating this requires todo service integration
-	// The actual implementation would need access to the todo service
-	return mcp.NewToolResultText(fmt.Sprintf("Todo %s would be assigned to category %d (requires todo service integration)", todoID, int64(categoryIDRaw))), nil
+	categoryID := int64(categoryIDRaw)
+	
+	// Call the todo service to assign the todo to the category
+	todo, err := h.todoService.AssignTodoToCategory(todoID, categoryID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assign todo to category: %w", err)
+	}
+	
+	return mcp.NewToolResultText(fmt.Sprintf("Todo '%s' (ID: %s) successfully assigned to category %d", todo.Title, todo.ID, categoryID)), nil
 }
 
 // RemoveTodoFromCategoryHandler handles the remove_todo_from_category MCP tool
@@ -253,8 +261,13 @@ func (h *CategoryHandler) RemoveTodoFromCategoryHandler(ctx context.Context, req
 		return nil, fmt.Errorf("todo_id parameter is required and must be a string")
 	}
 	
-	// For now, return a message indicating this requires todo service integration
-	return mcp.NewToolResultText(fmt.Sprintf("Todo %s would be removed from its category (requires todo service integration)", todoID)), nil
+	// Call the todo service to remove the todo from its category
+	todo, err := h.todoService.RemoveTodoFromCategory(todoID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to remove todo from category: %w", err)
+	}
+	
+	return mcp.NewToolResultText(fmt.Sprintf("Todo '%s' (ID: %s) successfully removed from its category", todo.Title, todo.ID)), nil
 }
 
 // GetUncategorizedTodosHandler handles the get_uncategorized_todos MCP tool

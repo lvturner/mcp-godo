@@ -140,6 +140,8 @@ description: "Task list for category feature implementation"
 - [x] T042 Performance optimization for category queries
 - [x] T043 [P] Additional unit tests for edge cases in tests/unit/
 - [x] T049 [P] Comprehensive unit tests for assign_todo_to_category fix in tests/unit/assign_todo_to_category_test.go
+- [x] T050 Fix assign_todo_to_category handler bug - ensure todo service is called for database updates
+- [x] T051 Run complete test suite verification - all assign_todo_to_category tests pass (13/13)
 - [x] T044 Security hardening for category operations
 - [x] T045 Run quickstart.md validation
 - [x] T046 Add logging for category operations

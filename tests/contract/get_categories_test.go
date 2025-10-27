@@ -12,8 +12,9 @@ import (
 )
 
 func TestGetAllCategoriesHandler_Success(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
 	expectedCategories := []todo.Category{
 		{
@@ -30,7 +31,7 @@ func TestGetAllCategoriesHandler_Success(t *testing.T) {
 		},
 	}
 
-	mockService.On("GetAllCategories").Return(expectedCategories, nil)
+	mockCategoryService.On("GetAllCategories").Return(expectedCategories, nil)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -46,16 +47,17 @@ func TestGetAllCategoriesHandler_Success(t *testing.T) {
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Personal Tasks")
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "#3498db")
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "#e74c3c")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
 
 func TestGetAllCategoriesHandler_EmptyList(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
 	expectedCategories := []todo.Category{}
 
-	mockService.On("GetAllCategories").Return(expectedCategories, nil)
+	mockCategoryService.On("GetAllCategories").Return(expectedCategories, nil)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -68,12 +70,13 @@ func TestGetAllCategoriesHandler_EmptyList(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "No categories found")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
 
 func TestGetCategoryHandler_Success(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
 	expectedCategory := todo.Category{
 		ID:          1,
@@ -82,7 +85,7 @@ func TestGetCategoryHandler_Success(t *testing.T) {
 		Color:       stringPtr("#3498db"),
 	}
 
-	mockService.On("GetCategoryByID", int64(1)).Return(expectedCategory, nil)
+	mockCategoryService.On("GetCategoryByID", int64(1)).Return(expectedCategory, nil)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -100,12 +103,13 @@ func TestGetCategoryHandler_Success(t *testing.T) {
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Work Tasks")
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "#3498db")
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Professional tasks")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
 
 func TestGetCategoryHandler_MissingID(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -118,12 +122,13 @@ func TestGetCategoryHandler_MissingID(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "id parameter is required")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
 
 func TestGetCategoryHandler_InvalidIDType(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -138,14 +143,15 @@ func TestGetCategoryHandler_InvalidIDType(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "id parameter is required and must be a number")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
 
 func TestGetCategoryHandler_ServiceError(t *testing.T) {
-	mockService := new(MockCategoryService)
-	categoryHandler := handler.NewCategoryHandler(mockService)
+	mockCategoryService := new(MockCategoryService)
+	mockTodoService := new(MockTodoService)
+	categoryHandler := handler.NewCategoryHandler(mockCategoryService, mockTodoService)
 
-	mockService.On("GetCategoryByID", int64(999)).Return(todo.Category{}, assert.AnError)
+	mockCategoryService.On("GetCategoryByID", int64(999)).Return(todo.Category{}, assert.AnError)
 
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -160,5 +166,5 @@ func TestGetCategoryHandler_ServiceError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "failed to retrieve category")
-	mockService.AssertExpectations(t)
+	mockCategoryService.AssertExpectations(t)
 }
