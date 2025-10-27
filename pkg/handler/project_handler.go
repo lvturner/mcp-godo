@@ -135,8 +135,16 @@ func (h *Handler) DeleteProjectHandler(ctx context.Context, request mcp.CallTool
 	}
 	id := int64(idRaw)
 
-	// For now, return a placeholder message
-	return mcp.NewToolResultText(fmt.Sprintf("Project %d deleted successfully", id)), nil
+	if h.projectService == nil {
+		return nil, fmt.Errorf("project service not initialized")
+	}
+
+	project, err := h.projectService.DeleteProject(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete project: %w", err)
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Project deleted: ID=%d, Name=%s", project.ID, project.Name)), nil
 }
 
 // GetProjectTodosHandler handles the get_project_todos MCP tool

@@ -129,13 +129,43 @@ func (p *project_mariadb) DeleteProject(id int64) (Project, error) {
 		return Project{}, err
 	}
 
-	stmt, err := p.db.Prepare("DELETE FROM projects WHERE id = ?")
+	// Start a transaction to ensure atomicity
+	tx, err := p.db.Begin()
 	if err != nil {
 		return Project{}, err
 	}
-	defer stmt.Close()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 
-	_, err = stmt.Exec(id)
+	// Update active todos (completed_at IS NULL) to set project_id = NULL
+	updateStmt, err := tx.Prepare("UPDATE todos SET project_id = NULL WHERE project_id = ? AND completed_at IS NULL")
+	if err != nil {
+		return Project{}, err
+	}
+	defer updateStmt.Close()
+
+	_, err = updateStmt.Exec(id)
+	if err != nil {
+		return Project{}, err
+	}
+
+	// Delete the project
+	deleteStmt, err := tx.Prepare("DELETE FROM projects WHERE id = ?")
+	if err != nil {
+		return Project{}, err
+	}
+	defer deleteStmt.Close()
+
+	_, err = deleteStmt.Exec(id)
+	if err != nil {
+		return Project{}, err
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
 	if err != nil {
 		return Project{}, err
 	}

@@ -183,6 +183,21 @@ Generated from spec.md and plan.md analysis.
 
 ---
 
+## Completed Tasks (Bug Fixes)
+
+### Bug Fix: Project Deletion Active Todo Handling
+**Status**: ✅ Completed | **Date**: 2025-10-27
+**Bug**: Project deletion was not properly handling active todos - they should have their project_id set to null when a project is deleted
+**Files Modified**:
+- [`pkg/todo/project_mariadb.go`](pkg/todo/project_mariadb.go) - Added transaction and active todo update logic
+- [`pkg/todo/project_sqlite.go`](pkg/todo/project_sqlite.go) - Added transaction and active todo update logic
+- [`pkg/handler/project_handler.go`](pkg/handler/project_handler.go) - Fixed placeholder implementation to actually call project service
+- [`tests/unit/project_deletion_test.go`](tests/unit/project_deletion_test.go) - Created comprehensive unit tests
+**Solution**: Added database transactions to atomically update active todos (completed_at IS NULL) to set project_id = NULL before deleting the project
+**Testing Results**: All tests pass (existing 29 unit tests + 11 contract tests + 7 new project deletion tests)
+
+---
+
 ## Task Summary
 
 **Total Tasks**: 18  
