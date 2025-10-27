@@ -202,8 +202,27 @@ func (h *Handler) GetActiveTodosHandler(ctx context.Context, request mcp.CallToo
 		if todo.ReferenceID != nil {
 			referenceID = fmt.Sprintf(", ReferenceID: %d", *todo.ReferenceID)
 		}
-		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s\n", 
-			todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID)
+		
+		// Get project information if available
+		projectInfo := ""
+		if todo.ProjectID != nil && h.projectService != nil {
+			project, err := h.projectService.GetProject(*todo.ProjectID)
+			if err == nil {
+				projectInfo = fmt.Sprintf(", Project: %s", project.Name)
+			}
+		}
+		
+		// Get category information if available
+		categoryInfo := ""
+		if todo.CategoryID != nil && h.categoryService != nil {
+			category, err := h.categoryService.GetCategoryByID(*todo.CategoryID)
+			if err == nil {
+				categoryInfo = fmt.Sprintf(", Category: %s", category.Name)
+			}
+		}
+		
+		resultText += fmt.Sprintf("ID: %s, Title: %s, Status: %s, Due Date: %s, Created Date: %s%s%s%s\n",
+			todo.ID, todo.Title, status, todo.DueDate, todo.CreatedDate, referenceID, projectInfo, categoryInfo)
 	}
 	return mcp.NewToolResultText(fmt.Sprintf("Today's date is %s, and the list of todo items is: %s", time.Now().Format("2006-01-02"), resultText)), nil
 }
