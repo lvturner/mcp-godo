@@ -13,6 +13,7 @@ import (
 
 var todoService todo.TodoService
 var projectService todo.ProjectService
+var categoryService todo.CategoryService
 var config todo.Config
 
 func loadConfig(){
@@ -38,6 +39,13 @@ func main() {
 		return
 	}
 
+	// Initialize category service using the same database connection
+	categoryService, err = todo.NewCategoryServiceFromConfig(config)
+	if err != nil {
+		fmt.Println("Error creating category service:", err)
+		return
+	}
+
 	// Create a new MCP server
 	s := server.NewMCPServer(
 		"Todo MCP",
@@ -55,7 +63,7 @@ func main() {
 }
 
 func addTools(s *server.MCPServer) {
-	handler := handler.NewHandlerWithProject(todoService, projectService)
+	handler := handler.NewHandlerWithProjectAndCategory(todoService, projectService, categoryService)
 
 	// Add tool with project_id support
 	tool := mcp.NewTool("add_todo",
@@ -186,6 +194,9 @@ func addTools(s *server.MCPServer) {
 
 	// Add project management tools
 	addProjectTools(s, handler)
+
+	// Add category management tools
+	addCategoryTools(s, handler)
 }
 
 func addProjectTools(s *server.MCPServer, handler *handler.Handler) {
@@ -270,4 +281,107 @@ func addProjectTools(s *server.MCPServer, handler *handler.Handler) {
 		),
 	)
 	s.AddTool(addTodoToProjectTool, handler.AddTodoToProjectHandler)
+}
+
+func addCategoryTools(s *server.MCPServer, handler *handler.Handler) {
+	// Create category tool
+	createCategoryTool := mcp.NewTool("create_category",
+		mcp.WithDescription("Create a new category"),
+		mcp.WithString("name",
+			mcp.Required(),
+			mcp.Description("The name of the category"),
+		),
+		mcp.WithString("description",
+			mcp.Description("The description of the category (optional)"),
+		),
+		mcp.WithString("color",
+			mcp.Description("The hex color code for the category (optional, e.g., '#FF5733')"),
+		),
+	)
+	s.AddTool(createCategoryTool, handler.CreateCategoryHandler)
+
+	// Get all categories tool
+	getAllCategoriesTool := mcp.NewTool("get_all_categories",
+		mcp.WithDescription("Retrieve all categories"),
+	)
+	s.AddTool(getAllCategoriesTool, handler.GetAllCategoriesHandler)
+
+	// Get category tool
+	getCategoryTool := mcp.NewTool("get_category",
+		mcp.WithDescription("Retrieve details of a single category by ID"),
+		mcp.WithNumber("id",
+			mcp.Required(),
+			mcp.Description("The ID of the category"),
+		),
+	)
+	s.AddTool(getCategoryTool, handler.GetCategoryHandler)
+
+	// Update category tool
+	updateCategoryTool := mcp.NewTool("update_category",
+		mcp.WithDescription("Update a category by ID"),
+		mcp.WithNumber("id",
+			mcp.Required(),
+			mcp.Description("The ID of the category"),
+		),
+		mcp.WithString("name",
+			mcp.Description("The new name of the category"),
+		),
+		mcp.WithString("description",
+			mcp.Description("The new description of the category"),
+		),
+		mcp.WithString("color",
+			mcp.Description("The new hex color code for the category"),
+		),
+	)
+	s.AddTool(updateCategoryTool, handler.UpdateCategoryHandler)
+
+	// Delete category tool
+	deleteCategoryTool := mcp.NewTool("delete_category",
+		mcp.WithDescription("Delete a category by ID"),
+		mcp.WithNumber("id",
+			mcp.Required(),
+			mcp.Description("The ID of the category"),
+		),
+	)
+	s.AddTool(deleteCategoryTool, handler.DeleteCategoryHandler)
+
+	// Get category todos tool
+	getCategoryTodosTool := mcp.NewTool("get_category_todos",
+		mcp.WithDescription("Retrieve all todos for a specific category"),
+		mcp.WithNumber("id",
+			mcp.Required(),
+			mcp.Description("The ID of the category"),
+		),
+	)
+	s.AddTool(getCategoryTodosTool, handler.GetCategoryTodosHandler)
+
+	// Get uncategorized todos tool
+	getUncategorizedTodosTool := mcp.NewTool("get_uncategorized_todos",
+		mcp.WithDescription("Retrieve all todos that are not assigned to any category"),
+	)
+	s.AddTool(getUncategorizedTodosTool, handler.GetUncategorizedTodosHandler)
+
+	// Assign todo to category tool
+	assignTodoToCategoryTool := mcp.NewTool("assign_todo_to_category",
+		mcp.WithDescription("Assign a todo item to a specific category"),
+		mcp.WithString("todo_id",
+			mcp.Required(),
+			mcp.Description("The ID of the todo item"),
+		),
+		mcp.WithNumber("category_id",
+			mcp.Required(),
+			mcp.Description("The ID of the category to assign the todo to"),
+		),
+	)
+	s.AddTool(assignTodoToCategoryTool, handler.AssignTodoToCategoryHandler)
+
+	// Remove todo from category tool
+	removeTodoFromCategoryTool := mcp.NewTool("remove_todo_from_category",
+		mcp.WithDescription("Remove a todo item from its category"),
+		mcp.WithString("todo_id",
+			mcp.Required(),
+			mcp.Description("The ID of the todo item"),
+		),
+	)
+	s.AddTool(removeTodoFromCategoryTool, handler.RemoveTodoFromCategoryHandler)
 }

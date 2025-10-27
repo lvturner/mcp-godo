@@ -143,6 +143,7 @@ description: "Task list for category feature implementation"
 - [x] T045 Run quickstart.md validation
 - [x] T046 Add logging for category operations
 - [x] T047 Handle category deletion edge cases (what happens to associated todos)
+- [x] T048 Expose category MCP tools in cmd/mcp-godo/main.go
 
 ---
 

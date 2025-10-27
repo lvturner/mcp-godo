@@ -15,8 +15,9 @@ import (
 )
 
 type Handler struct {
-	todoService    todo.TodoService
-	projectService todo.ProjectService
+	todoService    	todo.TodoService
+	projectService 	todo.ProjectService
+	categoryService	todo.CategoryService
 }
 
 func NewHandler(todoService todo.TodoService) *Handler {
@@ -27,6 +28,14 @@ func NewHandlerWithProject(todoService todo.TodoService, projectService todo.Pro
 	return &Handler{
 		todoService:    todoService,
 		projectService: projectService,
+	}
+}
+
+func NewHandlerWithProjectAndCategory(todoService todo.TodoService, projectService todo.ProjectService, categoryService todo.CategoryService) *Handler {
+	return &Handler{
+		todoService:    	todoService,
+		projectService: 	projectService,
+		categoryService:	categoryService,
 	}
 }
 
@@ -358,5 +367,78 @@ func extractIDFromURI(uri string) string {
         return ""
     }
 
-    return strings.TrimPrefix(parsed.Path, "/") 
+    return strings.TrimPrefix(parsed.Path, "/")
+}
+
+// Category handler methods
+func (h *Handler) CreateCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.CreateCategoryHandler(ctx, request)
+}
+
+func (h *Handler) GetAllCategoriesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.GetAllCategoriesHandler(ctx, request)
+}
+
+func (h *Handler) GetCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.GetCategoryHandler(ctx, request)
+}
+
+func (h *Handler) UpdateCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.UpdateCategoryHandler(ctx, request)
+}
+
+func (h *Handler) DeleteCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.DeleteCategoryHandler(ctx, request)
+}
+
+func (h *Handler) GetCategoryTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.GetCategoryTodosHandler(ctx, request)
+}
+
+func (h *Handler) GetUncategorizedTodosHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.GetUncategorizedTodosHandler(ctx, request)
+}
+
+func (h *Handler) AssignTodoToCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.AssignTodoToCategoryHandler(ctx, request)
+}
+
+func (h *Handler) RemoveTodoFromCategoryHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if h.categoryService == nil {
+		return nil, fmt.Errorf("category service not initialized")
+	}
+	categoryHandler := NewCategoryHandler(h.categoryService)
+	return categoryHandler.RemoveTodoFromCategoryHandler(ctx, request)
 }

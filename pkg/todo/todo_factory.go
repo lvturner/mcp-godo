@@ -40,3 +40,18 @@ func NewProjectServiceFromConfig(cfg Config) (ProjectService, error) {
 		return nil, ErrUnknownStorageType
 	}
 }
+
+func NewCategoryServiceFromConfig(cfg Config) (CategoryService, error) {
+	switch cfg.StorageType {
+
+	case "mariadb":
+		db, err := sql.Open("mysql", cfg.SQLDBPath)
+		if err != nil {
+			return nil, err
+		}
+		repo := NewCategoryMariaDB(db)
+		return NewCategoryService(repo), nil
+	default:
+		return nil, ErrUnknownStorageType
+	}
+}
